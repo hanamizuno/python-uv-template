@@ -1,6 +1,6 @@
-def main():
-    print("Hello from python-uv-template!")
+"""Sample main module."""
 
 
-if __name__ == "__main__":
-    main()
+def hello(name: str) -> str:
+    """Return a greeting message."""
+    return f"Hello, {name}!"
