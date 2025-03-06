@@ -1,5 +1,5 @@
 def main():
-    print("Hello from uv-template!")
+    print("Hello from python-uv-template!")
 
 
 if __name__ == "__main__":
