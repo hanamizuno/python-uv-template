@@ -16,6 +16,15 @@ dev = [
   "taskipy>=1.14.1",
 ]
 
+[tool.taskipy.tasks]
+lint = { cmd = "task lint:ruff && task lint:pyright", help = "Run Ruff and Pyright checkers" }
+"lint:ruff" = { cmd = "ruff check .", help = "Run Ruff linter" }
+"lint:pyright" = { cmd = "pyright", help = "Run Pyright type checker" }
+fix = { cmd = "ruff check --fix .", help = "Run Ruff linter with auto-fix" }
+format = { cmd = "ruff format .", help = "Run Ruff formatter" }
+test = { cmd = "pytest", help = "Run tests" }
+test_cov = { cmd = "pytest --cov=src --cov-report=html --cov-report=term", help = "Run tests with coverage report" }
+
 [tool.ruff.lint]
 # cf. https://docs.astral.sh/ruff/rules/
 select = ["ALL"]
@@ -58,7 +67,10 @@ convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["D104"]  # Allow missing docstring in __init__.py
-"*/tests/*" = ["PLR2004"] # Allow magic value in tests
+"*/tests/*" = [
+  "S101", # Allow use of assert in tests
+  "PLR2004", # Allow magic value in tests
+]
 
 [tool.ruff.format]
 # cf. https://docs.astral.sh/ruff/settings/
