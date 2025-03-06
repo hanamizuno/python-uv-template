@@ -8,10 +8,67 @@ dependencies = []
 
 [dependency-groups]
 dev = [
-    "pyright>=1.1.396",
-    "pytest>=8.3.5",
-    "pytest-asyncio>=0.25.3",
-    "pytest-cov>=6.0.0",
-    "ruff>=0.9.9",
-    "taskipy>=1.14.1",
+  "pyright>=1.1.396",
+  "pytest>=8.3.5",
+  "pytest-asyncio>=0.25.3",
+  "pytest-cov>=6.0.0",
+  "ruff>=0.9.9",
+  "taskipy>=1.14.1",
+]
+
+[tool.ruff.lint]
+# cf. https://docs.astral.sh/ruff/rules/
+select = ["ALL"]
+ignore = [
+  # Not recommended to use with formatter
+  "COM812",
+  "COM819",
+  "ISC002",
+  "Q000",
+  "Q001",
+  "Q002",
+  "Q003",
+  "Q004",
+  "E111",
+  "E114",
+  "E117",
+  "W191",
+  "D206",
+  "D207",
+  "D208",
+  "D300",
+  # Choose one
+  "D203", # conflict with D211
+  "D213", # conflict with D212
+  # For Japanese
+  # "D415", # missing-terminal-punctuation
+]
+allowed-confusables = [
+  # For Japanese
+  # "ノ", # U+30CE, Japanese katakana letter NO
+]
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+fixable = ["ALL"]
+unfixable = []
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["D104"]  # Allow missing docstring in __init__.py
+"*/tests/*" = ["PLR2004"] # Allow magic value in tests
+
+[tool.ruff.format]
+# cf. https://docs.astral.sh/ruff/settings/
+docstring-code-format = true # Enable reformatting of code snippets in docstrings.
+
+[tool.pyright]
+# cf. https://microsoft.github.io/pyright/#/configuration
+typeCheckingMode = "strict"
+reportMissingTypeStubs = false
+pythonVersion = "3.12"
+exclude = [
+  ".venv/**",
 ]
