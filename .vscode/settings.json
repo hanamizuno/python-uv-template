@@ -1,0 +1,12 @@
+{
+    "python.testing.pytestEnabled": true,
+    "editor.formatOnSave": true,
+    "flake8.enabled": false,
+    "[python]": {
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit"
+        },
+        "editor.defaultFormatter": "charliermarsh.ruff"
+    },
+    "ruff.importStrategy": "fromEnvironment"
+}
