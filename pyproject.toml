@@ -5,3 +5,13 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = []
+
+[dependency-groups]
+dev = [
+    "pyright>=1.1.396",
+    "pytest>=8.3.5",
+    "pytest-asyncio>=0.25.3",
+    "pytest-cov>=6.0.0",
+    "ruff>=0.9.9",
+    "taskipy>=1.14.1",
+]
