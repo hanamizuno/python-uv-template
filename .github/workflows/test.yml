@@ -55,11 +55,11 @@ jobs:
             const runURL = `${context.payload.repository.html_url}/actions/runs/${context.runId}`
             const downloadLink = `[Download HTML Report from Artifacts](${runURL})`
 
-            if (context.payload.number) {
-              github.issues.createComment({
-                issue_number: context.payload.number,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: [downloadLink, reportTable].join("\n")
-              })
-            }
+            const body = [downloadLink, reportTable].join("\n")
+
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            })
