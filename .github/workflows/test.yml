@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -26,8 +30,40 @@ jobs:
       - name: Run tests with coverage
         run: uv run task test_cov
 
+      - name: Measure coverage
+        id: coverage
+        run: |
+          report=`uv run task test_cov | tr "\n" ";"`
+          echo ::set-output name=report::$report
+
       - name: Upload coverage report
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: coverage-report
           path: htmlcov/
+
+      - name: Add comment to PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        env:
+          COVERAGE_REPORT: ${{ steps.coverage.outputs.report }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const allLines = process.env.COVERAGE_REPORT.split(";")
+            const divider_index = allLines.findIndex(line => line.includes("coverage: platform"))
+            const reportLines = allLines.slice(divider_index + 1, -5).map(line => line.split(/\s+/)).filter(line => line.length >= 4)
+            reportLines.splice(1, 0, ["----", "----", "----", "----"])
+            const reportTable = reportLines.map(line => `|${line.join("|")}|`).join("\n")
+
+            const runURL = `${context.payload.repository.html_url}/actions/runs/${context.runId}`
+            const downloadLink = `[Download HTML Report from Artifacts](${runURL})`
+
+            const body = [downloadLink, reportTable].join("\n")
+
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            })
