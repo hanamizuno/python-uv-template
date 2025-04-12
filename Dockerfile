@@ -24,8 +24,9 @@ ENV PATH="/workspace/.venv/bin:$PATH"
 RUN pyright --version
 
 # Install git for devcontainer
+# hadolint ignore=DL3008
 RUN apt-get update && \
-  apt-get install -y git && \
+  apt-get install -y --no-install-recommends git && \
   rm -rf /var/lib/apt/lists/*
 
 CMD ["python"]
