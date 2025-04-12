@@ -33,8 +33,8 @@ jobs:
       - name: Measure coverage
         id: coverage
         run: |
-          report=`uv run task test_cov | tr "\n" ";"`
-          echo ::set-output name=report::$report
+          report=$(uv run task test_cov | tr "\n" ";")
+          echo "report=${report}" >> "$GITHUB_OUTPUT"
 
       - name: Upload coverage report
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
