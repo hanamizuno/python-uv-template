@@ -1,5 +1,7 @@
 # cf. https://github.com/astral-sh/uv-docker-example/blob/main/Dockerfile
-ARG UV_VERSION=python3.12-bookworm-slim
+ARG PYTHON_VERSION=3.12
+ARG DEBIAN_VERSION=bookworm
+ARG UV_VERSION=python${PYTHON_VERSION}-${DEBIAN_VERSION}-slim
 
 # ===== Stage 1: development =====
 FROM ghcr.io/astral-sh/uv:$UV_VERSION AS dev
@@ -22,12 +24,6 @@ ENV PATH="/workspace/.venv/bin:$PATH"
 
 # Install pyright dependencies
 RUN pyright --version
-
-# Install git for devcontainer
-# hadolint ignore=DL3008
-RUN apt-get update && \
-  apt-get install -y --no-install-recommends git && \
-  rm -rf /var/lib/apt/lists/*
 
 CMD ["python"]
 
@@ -53,3 +49,13 @@ ENV PATH="/app/.venv/bin:$PATH"
 ENTRYPOINT []
 
 CMD ["python", "--version"]
+
+# ===== Stage 3: devcontainer =====
+FROM mcr.microsoft.com/vscode/devcontainers/base:$DEBIAN_VERSION AS devcontainer
+
+ENV UV_COMPILE_BYTECODE=1
+ENV UV_LINK_MODE=copy
+
+COPY --from=dev --chown=vscode: /usr/local/bin/uv /usr/local/bin/
+
+CMD ["sleep", "infinity"]

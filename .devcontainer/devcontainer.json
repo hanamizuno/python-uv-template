@@ -1,24 +1,23 @@
 {
-    "name": "python-uv",
-    "dockerComposeFile": [
-      "../compose.dev.yml",
-      "compose.yml"
-    ],
-    "service": "app",
-    "workspaceFolder": "/workspace",
-    "userEnvProbe": "loginInteractiveShell",
-    "overrideCommand": true,
-    "customizations": {
-      "vscode": {
-        "extensions": [
-          "ms-python.python",
-          "charliermarsh.ruff",
-          "ms-azuretools.vscode-docker",
-          "editorconfig.editorconfig",
-          "exiasr.hadolint",
-          "ms-python.vscode-pylance",
-          "tamasfe.even-better-toml"
-        ]
-      }
+  "name": "python-uv",
+  "dockerComposeFile": [
+    "../compose.dev.yml",
+    "compose.yml"
+  ],
+  "service": "app",
+  "workspaceFolder": "/workspace",
+  "userEnvProbe": "loginInteractiveShell",
+  "overrideCommand": true,
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "charliermarsh.ruff",
+        "editorconfig.editorconfig",
+        "ms-python.vscode-pylance",
+        "tamasfe.even-better-toml"
+      ]
     }
+  },
+  "postCreateCommand": "uv sync --frozen"
 }
