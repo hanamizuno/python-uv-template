@@ -1,5 +1,5 @@
 ---
-prompt: agent/plans/update_python_version.md
+prompt: agent/plans/20250414_update_python_version.md
 ---
 # Pythonバージョンと依存ライブラリ更新 実行計画
 
