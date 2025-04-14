@@ -1,5 +1,5 @@
 # cf. https://github.com/astral-sh/uv-docker-example/blob/main/Dockerfile
-ARG PYTHON_VERSION=3.12
+ARG PYTHON_VERSION=3.13
 ARG DEBIAN_VERSION=bookworm
 ARG UV_VERSION=python${PYTHON_VERSION}-${DEBIAN_VERSION}-slim
 

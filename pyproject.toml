@@ -3,16 +3,16 @@ name = "python-uv-template"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.13"
 dependencies = []
 
 [dependency-groups]
 dev = [
-  "pyright>=1.1.396",
+  "pyright>=1.1.399",
   "pytest>=8.3.5",
-  "pytest-asyncio>=0.25.3",
-  "pytest-cov>=6.0.0",
-  "ruff>=0.9.9",
+  "pytest-asyncio>=0.26.0",
+  "pytest-cov>=6.1.1",
+  "ruff>=0.11.5",
   "taskipy>=1.14.1",
 ]
 
@@ -80,7 +80,7 @@ docstring-code-format = true # Enable reformatting of code snippets in docstring
 # cf. https://microsoft.github.io/pyright/#/configuration
 typeCheckingMode = "strict"
 reportMissingTypeStubs = false
-pythonVersion = "3.12"
+pythonVersion = "3.13"
 exclude = [
   ".venv/**",
 ]
