@@ -34,15 +34,16 @@ graph TD
     B2 --> C;
     C --> D(Code: ファイル更新);
     D --> D1[Update .python-version];
-    D --> D2[Update pyproject.toml (Python version)];
+    D --> D2["Update pyproject.toml (Python version)"];
     D --> D3[Update Dockerfile];
     D1 --> E(Code: 依存関係更新);
     D2 --> E;
     D3 --> E;
     E -- 最新バージョン特定 & pyproject.toml更新 --> E1;
-    E1 -- uv lock --upgrade --> E2[Update uv.lock];
+    E1 -- "uv lock --upgrade" --> E2[Update uv.lock];
     E2 --> F(Code: 動作確認);
     F -- docker compose build --> F1[Build Docker Image];
-    F1 -- docker compose run python --version --> F2[Check Python Version];
+    F1 -- "docker compose run python --version" --> F2[Check Python Version];
     F2 -- docker compose run task test --> F3[Run Tests];
     F3 --> G[完了];
+```
