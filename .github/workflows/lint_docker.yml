@@ -3,8 +3,12 @@ name: Lint Docker
 on:
   push:
     branches: [main]
+    paths:
+      - "Dockerfile"
   pull_request:
     branches: [main]
+    paths:
+      - "Dockerfile"
 
 jobs:
   lint:
