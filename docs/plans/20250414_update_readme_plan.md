@@ -1,6 +1,3 @@
----
-prompt: agent/plans/20250414_update_readme.md
----
 # README更新および改善提案 実行計画 (2025-04-14)
 
 ## 1. README.md 更新
