@@ -18,6 +18,35 @@ This repository serves as a template for developing Python applications using th
     *   Designed to work with AI agents for planning and executing development tasks.
     *   Manages prompts and execution plans in Markdown format within the `docs/` directory.
 
+## Important Notes
+
+### Dependency Management with Dependabot
+
+Due to [Dependabot not yet supporting PEP 735 `[dependency-groups]`](https://github.com/dependabot/dependabot-core/issues/10847), this project uses `[project.optional-dependencies]` instead. When adding dependencies, please note:
+
+#### Adding Runtime Dependencies
+```bash
+# Add to [project.dependencies]
+uv add <package>
+```
+
+#### Adding Development Dependencies
+```bash
+# Add to [project.optional-dependencies] dev group
+uv add --optional dev <package>
+```
+
+#### Installing Dependencies
+```bash
+# Install all dependencies including dev
+uv sync --all-extras
+
+# Or using pip-compatible command
+uv pip install -e ".[dev]"
+```
+
+Once Dependabot supports `[dependency-groups]`, we plan to migrate back to the more modern PEP 735 format.
+
 ## Directory Structure
 
 ```
