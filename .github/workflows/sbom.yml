@@ -1,15 +1,16 @@
-name: Lint and Type Check
+name: Generate SBOM
 
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
+    paths:
+      - "uv.lock"
+      - "pyproject.toml"
 
 permissions: {}
 
 jobs:
-  lint:
+  sbom:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -30,8 +31,11 @@ jobs:
       - name: Install the project
         run: uv sync --frozen
 
-      - name: Run ruff linter
-        run: uv run task lint:ruff
+      - name: Generate SBOM (CycloneDX)
+        run: uvx cyclonedx-py environment --output sbom.cdx.json
 
-      - name: Run pyright type checker
-        run: uv run task lint:pyright
+      - name: Upload SBOM
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: sbom
+          path: sbom.cdx.json
