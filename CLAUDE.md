@@ -20,4 +20,4 @@ Please refer to `AGENTS.md` for comprehensive project guidelines including:
 
 ## Development Setup
 
-Use `uv sync --all-extras` for local development setup.
+Use `uv sync` for local development setup.

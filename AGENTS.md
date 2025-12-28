@@ -8,7 +8,7 @@
 - Containers: `Dockerfile`, `compose.dev.yml` (dev), `compose.yml` (prod).
 
 ## Build, Test, and Development Commands
-- Install (local uv): `uv sync --all-extras` (dev deps included).
+- Install (local uv): `uv sync` (dev deps included).
 - Run tasks (local): `uv run task <name>` (e.g., `uv run task test`).
 - Common tasks (via Taskipy):
   - `task lint`: Ruff + Pyright checks.
