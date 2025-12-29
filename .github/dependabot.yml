@@ -5,14 +5,23 @@ updates:
     directory: /
     schedule:
       interval: weekly
+      day: wednesday
     open-pull-requests-limit: 10
+    cooldown:
+      default-days: 7
   - package-ecosystem: docker
     directory: /
     schedule:
       interval: weekly
+      day: wednesday
     open-pull-requests-limit: 10
+    cooldown:
+      default-days: 7
   - package-ecosystem: uv
     directory: /
     schedule:
       interval: weekly
+      day: wednesday
     open-pull-requests-limit: 10
+    cooldown:
+      default-days: 7
