@@ -18,34 +18,18 @@ This repository serves as a template for developing Python applications using th
     *   Designed to work with AI agents for planning and executing development tasks.
     *   Manages prompts and execution plans in Markdown format within the `docs/` directory.
 
-## Important Notes
+## Security
 
-### Dependency Management with Dependabot
+This project implements supply chain attack protections.
+cf. https://zenn.dev/dajiaji/articles/47164ff27d2123
 
-Due to [Dependabot not yet supporting PEP 735 `[dependency-groups]`](https://github.com/dependabot/dependabot-core/issues/10847), this project uses `[project.optional-dependencies]` instead. When adding dependencies, please note:
-
-#### Adding Runtime Dependencies
-```bash
-# Add to [project.dependencies]
-uv add <package>
-```
-
-#### Adding Development Dependencies
-```bash
-# Add to [project.optional-dependencies] dev group
-uv add --optional dev <package>
-```
-
-#### Installing Dependencies
-```bash
-# Install all dependencies including dev
-uv sync --all-extras
-
-# Or using pip-compatible command
-uv pip install -e ".[dev]"
-```
-
-Once Dependabot supports `[dependency-groups]`, we plan to migrate back to the more modern PEP 735 format.
+- **Lockfile Integrity**: CI uses `uv sync --frozen` to detect lockfile tampering
+- **Minimum Privileges**: Workflows use `permissions: {}` at top level
+- **SHA Pinning**: All GitHub Actions are pinned to commit SHAs
+- **Dependabot Cooldown**: 7-day delay before accepting new package versions
+- **Vulnerability Scanning**: Trivy scans dependencies on every PR (results in GitHub Security tab)
+- **SBOM Generation**: CycloneDX SBOM generated on dependency changes
+- **Workflow Auditing**: zizmor checks for workflow security issues
 
 ## Directory Structure
 
@@ -62,6 +46,8 @@ Once Dependabot supports `[dependency-groups]`, we plan to migrate back to the m
 │       ├── lint_docker.yml
 │       ├── lint_gha.yml
 │       ├── lint.yml
+│       ├── sbom.yml      # SBOM generation
+│       ├── security.yml  # Vulnerability scanning
 │       └── test.yml
 ├── .vscode/              # VSCode specific files
 │   └── settings.json     # VSCode settings
