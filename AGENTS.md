@@ -3,7 +3,7 @@
 ## Project Structure & Module Organization
 - Source: `src/` (entry example: `src/main.py`).
 - Tests: `src/tests/` with `*_test.py` files (e.g., `src/tests/main_test.py`).
-- Docs & plans: `docs/` (e.g., `docs/plans/*.md`).
+- Docs & plans: `docs/` (e.g., `docs/agents/*.md`).
 - Tooling: `pyproject.toml` manages deps and tasks; `uv.lock` pins versions.
 - Containers: `Dockerfile`, `compose.dev.yml` (dev), `compose.yml` (prod).
 
