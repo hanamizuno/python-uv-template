@@ -32,7 +32,7 @@ jobs:
         run: uv sync --frozen
 
       - name: Generate SBOM (CycloneDX)
-        run: uvx cyclonedx-py environment --output sbom.cdx.json
+        run: uvx cyclonedx-py environment -o sbom.cdx.json
 
       - name: Upload SBOM
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
