@@ -1,0 +1,25 @@
+{
+  "name": "python-uv (Claude Code)",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "../.."
+  },
+  "runArgs": [
+    "--cap-add=NET_ADMIN",
+    "--cap-add=NET_RAW"
+  ],
+  "remoteUser": "claude",
+  "containerEnv": {
+    "CLAUDE_CONFIG_DIR": "/home/claude/.claude"
+  },
+  "mounts": [
+    "source=claude-code-config-${devcontainerId},target=/home/claude/.claude,type=volume",
+    "source=claude-code-bashhistory-${devcontainerId},target=/commandhistory,type=volume"
+  ],
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=delegated",
+  "workspaceFolder": "/workspace",
+  "overrideCommand": true,
+  "postCreateCommand": "curl -fsSL https://claude.ai/install.sh | bash && uv sync --frozen",
+  "postStartCommand": "sudo /usr/local/bin/init-firewall.sh",
+  "waitFor": "postStartCommand"
+}
