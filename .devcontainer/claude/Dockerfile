@@ -16,8 +16,8 @@ ARG USER_UID=1000
 ARG USER_GID=$USER_UID
 RUN groupadd --gid $USER_GID $USERNAME \
     && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME \
-    && mkdir -p /workspace /commandhistory \
-    && chown -R ${USERNAME}:${USERNAME} /workspace /commandhistory
+    && mkdir -p /workspace /home/${USERNAME}/.claude /commandhistory \
+    && chown -R ${USERNAME}:${USERNAME} /workspace /home/${USERNAME}/.claude /commandhistory
 
 # Persist bash history across container restarts
 RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=/commandhistory/.bash_history" \
@@ -25,14 +25,14 @@ RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=/commandhisto
     && touch /commandhistory/.bash_history \
     && chown -R ${USERNAME} /commandhistory
 
-# Firewall script (sudo allowed only for this)
-COPY .devcontainer/claude/init-firewall.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/init-firewall.sh \
+# Firewall and entrypoint scripts (sudo allowed only for firewall)
+COPY .devcontainer/claude/init-firewall.sh .devcontainer/claude/entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/init-firewall.sh /usr/local/bin/entrypoint.sh \
     && echo "${USERNAME} ALL=(root) NOPASSWD: /usr/local/bin/init-firewall.sh" \
        > /etc/sudoers.d/${USERNAME}-firewall \
     && chmod 0440 /etc/sudoers.d/${USERNAME}-firewall
 
-ENV DEVCONTAINER=true
+ENV PATH="/home/claude/.local/bin:${PATH}"
 WORKDIR /workspace
 USER ${USERNAME}
-CMD ["sleep", "infinity"]
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

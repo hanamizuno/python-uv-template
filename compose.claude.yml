@@ -1,0 +1,20 @@
+services:
+  claude:
+    build:
+      context: .
+      dockerfile: .devcontainer/claude/Dockerfile
+    container_name: claude-code
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    environment:
+      FIREWALL_MODE: ${FIREWALL_MODE:-strict}
+      CLAUDE_CONFIG_DIR: /home/claude/.claude
+    volumes:
+      - .:/workspace:delegated
+      - claude-config:/home/claude/.claude
+      - claude-history:/commandhistory
+
+volumes:
+  claude-config:
+  claude-history:

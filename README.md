@@ -8,6 +8,7 @@ This repository serves as a template for developing Python applications using th
 *   **Containerized Development:**
     *   **Docker & Docker Compose:** Provides consistent development and production environments using multi-stage builds (`dev`, `prod`).
     *   **VSCode Dev Containers:** Includes a `.devcontainer/devcontainer.json` configuration for a seamless development experience within VSCode.
+    *   **Claude Code Container:** Isolated container for autonomous Claude Code operation with firewall and non-root user (`compose.claude.yml`).
 *   **Development Tools:** Integrated with standard development tools:
     *   [`ruff`](https://docs.astral.sh/ruff/) for linting and formatting.
     *   [`pyright`](https://microsoft.github.io/pyright/) for static type checking.
@@ -35,7 +36,8 @@ cf. https://zenn.dev/dajiaji/articles/47164ff27d2123
 
 ```
 .
-├── .devcontainer/        # VSCode Dev Containers configuration
+├── .devcontainer/        # Container configurations
+│   ├── claude/           # Claude Code container (Dockerfile, firewall, entrypoint)
 │   ├── compose.yml
 │   └── devcontainer.json
 ├── .dockerignore
@@ -54,6 +56,7 @@ cf. https://zenn.dev/dajiaji/articles/47164ff27d2123
 ├── .gitignore
 ├── .python-version       # Specifies Python version (primarily for uv/tooling)
 ├── Dockerfile            # Defines container images (dev, prod, devcontainer)
+├── compose.claude.yml    # Docker Compose configuration for Claude Code
 ├── compose.dev.yml       # Docker Compose configuration for development
 ├── compose.yml           # Docker Compose configuration for production
 ├── pyproject.toml        # Project metadata and dependencies (PEP 621, uv, ruff, pyright, pytest, taskipy)
@@ -141,6 +144,38 @@ Example:
 # Inside Dev Container terminal or after `docker compose run ... bash`
 task lint
 task test_cov
+```
+
+## Claude Code Container
+
+An isolated container for running Claude Code autonomously with `--dangerously-skip-permissions`. The container provides:
+
+*   **Network firewall:** iptables-based outbound traffic control
+*   **Non-root user:** Runs as `claude` (UID 1000)
+*   **No Docker socket:** Cannot access host Docker
+*   **Workspace isolation:** Only the project directory is mounted
+
+### Firewall Modes
+
+| Mode | Description | Use case |
+|---|---|---|
+| `strict` (default) | Allowlist only (GitHub, PyPI, Anthropic API, GCS) | Implementation, testing, refactoring |
+| `open` | All outbound HTTPS/HTTP allowed | Tasks requiring web search |
+
+### Usage
+
+```bash
+# Start (strict firewall)
+docker compose -f compose.claude.yml up -d
+
+# Start (HTTPS open)
+FIREWALL_MODE=open docker compose -f compose.claude.yml up -d
+
+# Run Claude Code
+docker compose -f compose.claude.yml exec claude claude --dangerously-skip-permissions
+
+# Stop
+docker compose -f compose.claude.yml down
 ```
 
 ## AI Agent Workflow Example
