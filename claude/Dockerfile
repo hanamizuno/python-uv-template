@@ -26,7 +26,7 @@ RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=/commandhisto
     && chown -R ${USERNAME} /commandhistory
 
 # Firewall and entrypoint scripts (sudo allowed only for firewall)
-COPY .devcontainer/claude/init-firewall.sh .devcontainer/claude/entrypoint.sh /usr/local/bin/
+COPY claude/init-firewall.sh claude/entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/init-firewall.sh /usr/local/bin/entrypoint.sh \
     && echo "${USERNAME} ALL=(root) NOPASSWD: /usr/local/bin/init-firewall.sh" \
        > /etc/sudoers.d/${USERNAME}-firewall \

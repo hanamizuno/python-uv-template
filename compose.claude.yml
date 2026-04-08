@@ -2,7 +2,7 @@ services:
   claude:
     build:
       context: .
-      dockerfile: .devcontainer/claude/Dockerfile
+      dockerfile: claude/Dockerfile
     container_name: claude-code
     cap_add:
       - NET_ADMIN

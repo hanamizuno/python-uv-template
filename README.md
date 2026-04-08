@@ -36,10 +36,10 @@ cf. https://zenn.dev/dajiaji/articles/47164ff27d2123
 
 ```
 .
-├── .devcontainer/        # Container configurations
-│   ├── claude/           # Claude Code container (Dockerfile, firewall, entrypoint)
+├── .devcontainer/        # VSCode Dev Containers configuration
 │   ├── compose.yml
 │   └── devcontainer.json
+├── claude/               # Claude Code container (Dockerfile, firewall, entrypoint)
 ├── .dockerignore
 ├── .editorconfig
 ├── .github/              # GitHub specific files
