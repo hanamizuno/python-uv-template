@@ -1,6 +1,6 @@
 # Python + uv + AI Agent Development Template
 
-This repository serves as a template for developing Python applications using the [uv](https://docs.astral.sh/uv/) package manager and potentially leveraging AI agents (like Cline) for development tasks. It comes pre-configured with Docker, Dev Containers, GitHub Actions CI, and common development tools.
+This repository serves as a template for developing Python applications using the [uv](https://docs.astral.sh/uv/) package manager. It comes pre-configured with Docker, Dev Containers, GitHub Actions CI, and common development tools.
 
 ## Features
 
@@ -15,9 +15,6 @@ This repository serves as a template for developing Python applications using th
     *   [`pytest`](https://docs.pytest.org/) for testing (including coverage reports).
     *   [`taskipy`](https://github.com/taskipy/taskipy) for managing project tasks.
 *   **CI/CD:** Includes GitHub Actions workflows (`.github/workflows/`) for automated linting and testing on code pushes.
-*   **(WIP) AI Agent Integration (Workflow Example):**
-    *   Designed to work with AI agents for planning and executing development tasks.
-    *   Manages prompts and execution plans in Markdown format within the `docs/` directory.
 
 ## Security
 
@@ -78,12 +75,12 @@ cf. https://zenn.dev/dajiaji/articles/47164ff27d2123
 ### Prerequisites
 
 *   Docker and Docker Compose
-*   VSCode with the "Dev Containers" extension (recommended)
+*   VSCode with the "Dev Containers" extension
 *   uv (if not using Docker)
 
 ### Setup Options
 
-#### Option 1: Using VSCode Dev Containers (Recommended)
+#### Option 1: Using VSCode Dev Containers
 
 1.  Open this repository in VSCode.
 2.  When prompted ("Reopen in Container"), click it. VSCode will build the development container and connect to it automatically.
@@ -175,7 +172,3 @@ docker compose -f compose.claude.yml exec claude claude --dangerously-skip-permi
 # Stop
 docker compose -f compose.claude.yml down
 ```
-
-## AI Agent Workflow Example
-
-(WIP)
