@@ -12,6 +12,12 @@ services:
       CLAUDE_CONFIG_DIR: /home/claude/.claude
     volumes:
       - .:/workspace:delegated
+      - type: bind
+        source: ${HOME}/.gitconfig
+        target: /home/claude/.gitconfig
+        read_only: true
+        bind:
+          create_host_path: false
       - claude-config:/home/claude/.claude
       - claude-history:/commandhistory
 

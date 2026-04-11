@@ -157,6 +157,11 @@ An isolated container for running Claude Code autonomously with `--dangerously-s
 | `strict` (default) | Allowlist only (GitHub, PyPI, Anthropic API, GCS) | Implementation, testing, refactoring |
 | `open` | All outbound HTTPS/HTTP allowed | Tasks requiring web search |
 
+### Host integration
+
+*   **Git author info:** `~/.gitconfig` is mounted read-only at `/home/claude/.gitconfig`, so commits inside the container reuse your host `user.name` / `user.email`. The host file must exist or `up` will fail.
+*   **SSH credentials (opt-in):** Mount `~/.ssh` read-only by adding the override file `compose.claude.auth.yml`. Required for `git push`/`pull` against private repos via SSH.
+
 ### Usage
 
 ```bash
@@ -165,6 +170,9 @@ docker compose -f compose.claude.yml up -d
 
 # Start (HTTPS open)
 FIREWALL_MODE=open docker compose -f compose.claude.yml up -d
+
+# Start with host SSH credentials mounted
+docker compose -f compose.claude.yml -f compose.claude.auth.yml up -d
 
 # Run Claude Code
 docker compose -f compose.claude.yml exec claude claude --dangerously-skip-permissions
