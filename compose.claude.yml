@@ -13,7 +13,7 @@ services:
     volumes:
       - .:/workspace:delegated
       - type: bind
-        source: ${HOME}/.gitconfig
+        source: ${GIT_CONFIG_GLOBAL:-${HOME}/.gitconfig}
         target: /home/claude/.gitconfig
         read_only: true
         bind:

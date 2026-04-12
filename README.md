@@ -159,7 +159,7 @@ An isolated container for running Claude Code autonomously with `--dangerously-s
 
 ### Host integration
 
-*   **Git author info:** `~/.gitconfig` is mounted read-only at `/home/claude/.gitconfig`, so commits inside the container reuse your host `user.name` / `user.email`. The host file must exist or `up` will fail.
+*   **Git author info:** Host git config is mounted read-only at `/home/claude/.gitconfig`, so commits inside the container reuse your host `user.name` / `user.email`. Defaults to `~/.gitconfig`; set `GIT_CONFIG_GLOBAL` to override (e.g. `~/.config/git/config`).
 *   **SSH credentials (opt-in):** Mount `~/.ssh` read-only by adding the override file `compose.claude.auth.yml`. Required for `git push`/`pull` against private repos via SSH.
 
 ### Usage
