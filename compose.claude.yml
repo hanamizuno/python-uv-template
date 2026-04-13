@@ -3,21 +3,16 @@ services:
     build:
       context: .
       dockerfile: claude/Dockerfile
-    container_name: claude-code
     cap_add:
       - NET_ADMIN
       - NET_RAW
     environment:
       FIREWALL_MODE: ${FIREWALL_MODE:-strict}
       CLAUDE_CONFIG_DIR: /home/claude/.claude
+      GIT_USER_NAME: ${GIT_USER_NAME:-}
+      GIT_USER_EMAIL: ${GIT_USER_EMAIL:-}
     volumes:
       - .:/workspace:delegated
-      - type: bind
-        source: ${GIT_CONFIG_GLOBAL:-${HOME}/.gitconfig}
-        target: /home/claude/.gitconfig
-        read_only: true
-        bind:
-          create_host_path: false
       - claude-config:/home/claude/.claude
       - claude-history:/commandhistory
 

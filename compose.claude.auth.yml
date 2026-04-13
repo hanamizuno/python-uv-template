@@ -1,17 +1,26 @@
-# Optional override: mount host SSH credentials read-only into the Claude Code container.
+# Optional override: mount host SSH and GitHub CLI credentials into the Claude Code container.
 #
 # Usage:
-#   docker compose -f compose.claude.yml -f compose.claude.auth.yml up -d
+#   scripts/claude-start.sh -f compose.claude.auth.yml up -d
 #
-# This enables `git push`/`pull` against private repositories via SSH from inside the
-# container. Strict firewall mode allows outbound port 22, so SSH to GitHub works once
-# DNS resolves the host. The mount is read-only and the host path must already exist.
+# Mounts:
+#   - ~/.ssh        → /home/claude/.ssh        (read-only) — git push/pull via SSH
+#   - ~/.config/gh  → /home/claude/.config/gh  (read-only) — GitHub CLI (gh) authentication
+#
+# Both host paths must already exist. Strict firewall mode allows outbound port 22 (SSH)
+# and HTTPS to GitHub, so both methods work without switching to open mode.
 services:
   claude:
     volumes:
       - type: bind
         source: ${HOME}/.ssh
         target: /home/claude/.ssh
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${HOME}/.config/gh
+        target: /home/claude/.config/gh
         read_only: true
         bind:
           create_host_path: false

@@ -1,6 +1,14 @@
 #!/bin/bash
 set -euo pipefail
 
+# Set up git identity from environment variables
+if [ -n "${GIT_USER_NAME:-}" ]; then
+    git config --global user.name "$GIT_USER_NAME"
+fi
+if [ -n "${GIT_USER_EMAIL:-}" ]; then
+    git config --global user.email "$GIT_USER_EMAIL"
+fi
+
 # First-time setup: install Claude Code if not present
 if ! command -v claude &>/dev/null; then
     echo "Installing Claude Code..."

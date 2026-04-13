@@ -159,20 +159,20 @@ An isolated container for running Claude Code autonomously with `--dangerously-s
 
 ### Host integration
 
-*   **Git author info:** Host git config is mounted read-only at `/home/claude/.gitconfig`, so commits inside the container reuse your host `user.name` / `user.email`. Defaults to `~/.gitconfig`; set `GIT_CONFIG_GLOBAL` to override (e.g. `~/.config/git/config`).
-*   **SSH credentials (opt-in):** Mount `~/.ssh` read-only by adding the override file `compose.claude.auth.yml`. Required for `git push`/`pull` against private repos via SSH.
+*   **Git author info:** The startup script (`scripts/claude-start.sh`) automatically reads `user.name` / `user.email` from your host's `git config` and passes them as environment variables. Works with any git config layout (standard, XDG, Nix/home-manager).
+*   **SSH & GitHub CLI credentials (opt-in):** Adding the override file `compose.claude.auth.yml` mounts `~/.ssh` and `~/.config/gh` read-only. Required for `git push`/`pull` via SSH and `gh` CLI operations (PR creation, issue management, etc.).
 
 ### Usage
 
 ```bash
 # Start (strict firewall)
-docker compose -f compose.claude.yml up -d
+scripts/claude-start.sh up -d
 
 # Start (HTTPS open)
-FIREWALL_MODE=open docker compose -f compose.claude.yml up -d
+FIREWALL_MODE=open scripts/claude-start.sh up -d
 
-# Start with host SSH credentials mounted
-docker compose -f compose.claude.yml -f compose.claude.auth.yml up -d
+# Start with host SSH & GitHub CLI credentials mounted
+scripts/claude-start.sh -f compose.claude.auth.yml up -d
 
 # Run Claude Code
 docker compose -f compose.claude.yml exec claude claude --dangerously-skip-permissions
