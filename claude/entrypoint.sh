@@ -9,12 +9,6 @@ if [ -n "${GIT_USER_EMAIL:-}" ]; then
     git config --global user.email "$GIT_USER_EMAIL"
 fi
 
-# First-time setup: install Claude Code if not present
-if ! command -v claude &>/dev/null; then
-    echo "Installing Claude Code..."
-    curl -fsSL https://claude.ai/install.sh | bash
-fi
-
 # First-time setup: install Python dependencies if .venv missing
 if [ ! -d "/workspace/.venv" ]; then
     echo "Installing Python dependencies..."
