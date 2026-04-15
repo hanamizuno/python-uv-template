@@ -159,6 +159,7 @@ An isolated container for running Claude Code autonomously with `--dangerously-s
 
 ### Host integration
 
+*   **Claude authentication:** Host `~/.claude` is bind-mounted so the container inherits your login session. If you have already run `claude` on the host, the container starts pre-authenticated. If `~/.claude` does not exist yet, create it first: `mkdir -p ~/.claude`.
 *   **Git author info:** The startup script (`scripts/claude-start.sh`) automatically reads `user.name` / `user.email` from your host's `git config` and passes them as environment variables. Works with any git config layout (standard, XDG, Nix/home-manager).
 *   **SSH & GitHub CLI credentials (opt-in):** Adding the override file `compose.claude.auth.yml` mounts `~/.ssh` and `~/.config/gh` read-only. Required for `git push`/`pull` via SSH and `gh` CLI operations (PR creation, issue management, etc.).
 

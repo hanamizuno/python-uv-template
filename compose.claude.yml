@@ -13,9 +13,15 @@ services:
       GIT_USER_EMAIL: ${GIT_USER_EMAIL:-}
     volumes:
       - .:/workspace:delegated
-      - claude-config:/home/claude/.claude
+      # Share host Claude authentication so the container starts pre-authenticated.
+      # create_host_path: false ensures the directory must exist on the host.
+      # If ~/.claude does not exist, run: mkdir -p ~/.claude
+      - type: bind
+        source: ${HOME}/.claude
+        target: /home/claude/.claude
+        bind:
+          create_host_path: false
       - claude-history:/commandhistory
 
 volumes:
-  claude-config:
   claude-history:
