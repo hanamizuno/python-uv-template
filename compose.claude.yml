@@ -11,6 +11,14 @@ services:
       CLAUDE_CONFIG_DIR: /home/claude/.claude
       GIT_USER_NAME: ${GIT_USER_NAME:-}
       GIT_USER_EMAIL: ${GIT_USER_EMAIL:-}
+      # Max サブスクリプション枠で動作する長期 OAuth トークン。
+      # ホスト側で `claude setup-token` を実行して発行し、
+      # ~/.zshrc 等で export しておく。
+      # API 従量課金用の ANTHROPIC_API_KEY とは別物なので注意。
+      CLAUDE_CODE_OAUTH_TOKEN: ${CLAUDE_CODE_OAUTH_TOKEN:-}
+      # gh CLI も macOS Keychain にトークンを保存するため同じ問題がある。
+      # `gh auth token` で取得したトークンを ~/.config/claude-code/env に追記。
+      GH_TOKEN: ${GH_TOKEN:-}
     volumes:
       - .:/workspace:delegated
       # Share host Claude authentication so the container starts pre-authenticated.
