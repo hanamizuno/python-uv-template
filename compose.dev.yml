@@ -5,3 +5,5 @@ services:
       dockerfile: Dockerfile
       target: dev
     command: python --version
+    volumes:
+      - .:/workspace:cached

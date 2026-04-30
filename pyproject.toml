@@ -23,7 +23,22 @@ lint = { cmd = "task lint:ruff && task lint:pyright", help = "Run Ruff and Pyrig
 fix = { cmd = "ruff check --fix .", help = "Run Ruff linter with auto-fix" }
 format = { cmd = "ruff format .", help = "Run Ruff formatter" }
 test = { cmd = "pytest", help = "Run tests" }
-test_cov = { cmd = "pytest --cov=src --cov-report=html --cov-report=term", help = "Run tests with coverage report" }
+test_cov = { cmd = "pytest --cov=myapp --cov-report=html --cov-report=term", help = "Run tests with coverage report" }
+
+[tool.pytest.ini_options]
+# `--import-mode=importlib` is required for co-located `tests/` directories:
+# without it, same-named test files under different `tests/` collide.
+addopts = "--import-mode=importlib -ra --strict-markers"
+testpaths = ["myapp"]
+python_files = ["test_*.py", "*_test.py"]
+
+[tool.coverage.run]
+source = ["myapp"]
+branch = true
+omit = ["**/tests/**"]
+
+[tool.coverage.report]
+show_missing = true
 
 [tool.ruff.lint]
 # cf. https://docs.astral.sh/ruff/rules/
@@ -67,9 +82,12 @@ convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["D104"]  # Allow missing docstring in __init__.py
-"*/tests/*" = [
+"**/tests/**" = [
   "S101", # Allow use of assert in tests
   "PLR2004", # Allow magic value in tests
+  "D", # Docstrings not required in tests
+  "ANN", # Type annotations not required in tests
+  "INP001", # tests/ is intentionally not a package (pytest importlib mode)
 ]
 
 [tool.ruff.format]

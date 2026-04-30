@@ -1,6 +1,6 @@
 """Sample tests."""
 
-from src.main import hello
+from myapp.main import hello
 
 
 def test_hello_1() -> None:
