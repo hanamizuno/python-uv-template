@@ -4,11 +4,11 @@ on:
   push:
     branches: [main]
     paths:
-      - "Dockerfile"
+      - "**/Dockerfile"
   pull_request:
     branches: [main]
     paths:
-      - "Dockerfile"
+      - "**/Dockerfile"
 
 jobs:
   lint:
@@ -23,7 +23,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Lint Dockerfile
+      - name: Lint Dockerfiles
         uses: hadolint/hadolint-action@2332a7b74a6de0dda2e2221d575162eba76ba5e5 # v3.3.0
         with:
-          dockerfile: Dockerfile
+          recursive: true

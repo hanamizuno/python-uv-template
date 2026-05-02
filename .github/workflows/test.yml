@@ -32,12 +32,10 @@ jobs:
         run: uv sync --frozen
 
       - name: Run tests with coverage
-        run: uv run task test_cov
-
-      - name: Measure coverage
         id: coverage
         run: |
-          report=$(uv run task test_cov | tr "\n" ";")
+          uv run task test_cov | tee coverage.txt
+          report=$(tr "\n" ";" < coverage.txt)
           echo "report=${report}" >> "$GITHUB_OUTPUT"
 
       - name: Upload coverage report
