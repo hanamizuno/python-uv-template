@@ -12,9 +12,8 @@ This template targets **non-distributed Python applications** (services, interna
 
 *   **Modern Python Stack:** Uses Python 3.14+ and `uv` for fast dependency management.
 *   **Containerized Development:**
-    *   **Docker & Docker Compose:** Provides consistent development and production environments using multi-stage builds (`dev`, `prod`).
-    *   **VSCode Dev Containers:** Includes a `.devcontainer/devcontainer.json` configuration for a seamless development experience within VSCode.
-    *   **Claude Code Container:** Isolated container for autonomous Claude Code operation with firewall and non-root user (`compose.claude.yml`, [details](claude/README.md)).
+    *   **Docker & Docker Compose:** Provides consistent development and production environments using multi-stage builds (`dev`, `prod`, `devcontainer`).
+    *   **VSCode Dev Containers:** Includes a `.devcontainer/devcontainer.json` configuration that layers the AI agent toolchain (Claude Code CLI, GitHub CLI, common utilities) on top of the project's Python environment via [Dev Container Features](https://containers.dev/implementors/features/) — no per-project agent Dockerfile needed.
 *   **Development Tools:** Integrated with standard development tools:
     *   [`ruff`](https://docs.astral.sh/ruff/) for linting and formatting.
     *   [`pyright`](https://microsoft.github.io/pyright/) for static type checking.
@@ -40,8 +39,7 @@ cf. https://zenn.dev/dajiaji/articles/47164ff27d2123
 ```
 .
 ├── .claude/                    # Claude Code shared settings (committed)
-├── .devcontainer/              # VSCode Dev Containers configuration
-│   ├── compose.yml
+├── .devcontainer/              # Dev Container config (also runs the AI agent toolchain via Features)
 │   └── devcontainer.json
 ├── .dockerignore
 ├── .editorconfig
@@ -64,13 +62,6 @@ cf. https://zenn.dev/dajiaji/articles/47164ff27d2123
 ├── CLAUDE.md                   # Pointer to AGENTS.md for Claude Code
 ├── Dockerfile                  # Defines container images (dev, prod, devcontainer)
 ├── README.md                   # This file
-├── claude/                     # Claude Code container (see claude/README.md)
-│   ├── Dockerfile
-│   ├── README.md
-│   ├── entrypoint.sh
-│   └── init-firewall.sh
-├── compose.claude.auth.yml     # Optional override: mount host SSH and gh credentials
-├── compose.claude.yml          # Docker Compose configuration for Claude Code
 ├── compose.dev.yml             # Docker Compose configuration for development
 ├── compose.yml                 # Docker Compose configuration for production
 ├── docs/                       # Documentation and AI agent related files
@@ -81,8 +72,6 @@ cf. https://zenn.dev/dajiaji/articles/47164ff27d2123
 │   └── tests/                  # Co-located tests (no __init__.py — uses pytest importlib mode)
 │       └── main_test.py
 ├── pyproject.toml              # Project metadata and tool config (uv, ruff, pyright, pytest, taskipy)
-├── scripts/
-│   └── claude-start.sh         # Wrapper for starting the Claude Code container
 └── uv.lock                     # Pinned versions of dependencies
 ```
 
@@ -157,6 +146,51 @@ task lint
 task test_cov
 ```
 
-## Claude Code Container
+## AI Agent Dev Container
 
-An isolated container for running Claude Code autonomously with firewall and non-root user. See [`claude/README.md`](claude/README.md) for setup, firewall modes, authentication, and usage.
+The Dev Container is also the runtime for AI coding agents (Claude Code, etc.). The agent toolchain is layered on top of the Python environment via [Dev Container Features](https://containers.dev/implementors/features/), so no per-project `claude/` directory or compose override is needed.
+
+### Included Features
+
+| Feature | Source |
+|---|---|
+| Common utilities (non-root `vscode` user, sudo, packages) | `ghcr.io/devcontainers/features/common-utils:2` |
+| GitHub CLI | `ghcr.io/devcontainers/features/github-cli:1` |
+| Node.js (required by `claude-code`) | `ghcr.io/devcontainers/features/node:1` |
+| Claude Code CLI | `ghcr.io/anthropics/devcontainer-features/claude-code:1` |
+
+To add another agent CLI (e.g. Codex/Cursor), drop in either an upstream Feature or a local `./.devcontainer/<feature-id>/` directory and reference it from `features` in `devcontainer.json`.
+
+### Initial setup
+
+1. **Open the container** — VS Code "Reopen in Container", or headless: `devcontainer up --workspace-folder .`
+2. **Authenticate** (one-time per devcontainer ID; persisted in named volumes, not bind-mounted from the host):
+   - **Claude Code**: just start the agent — on first launch it shows the login flow inline. Do NOT pass `/login` as a CLI argument; that is a slash command for an active session and triggers the flow twice when used from the host shell.
+     ```bash
+     devcontainer exec --workspace-folder . claude --dangerously-skip-permissions
+     ```
+   - **GitHub CLI** (web flow):
+     ```bash
+     devcontainer exec --workspace-folder . gh auth login --hostname github.com --git-protocol https --web
+     ```
+     Or, to seed from an existing host token (`$GH_TOKEN`):
+     ```bash
+     devcontainer exec --workspace-folder . --remote-env GH_TOKEN_INPUT=$GH_TOKEN \
+       sh -c 'printf "%s\n" "$GH_TOKEN_INPUT" | env -u GH_TOKEN gh auth login --hostname github.com --with-token'
+     ```
+   Credentials live in `claude-config-${devcontainerId}` and `gh-config-${devcontainerId}` volumes and survive `--remove-existing-container` rebuilds.
+
+### Operating modes
+
+- **Default (egress open)** — outbound traffic is unrestricted. Host credentials are *not* bind-mounted (Claude/`gh` auth lives in container-scoped volumes), and the host Docker socket is not exposed. The defense surface for `--dangerously-skip-permissions` is: non-root `vscode` user, workspace-only mount, container-scoped auth volumes.
+- **Isolated mode (optional)** — for a stricter sandbox, create a Docker network with no egress and attach the container to it:
+  ```bash
+  docker network create --internal agent-internal
+  ```
+  Then add `"runArgs": ["--network=agent-internal"]` to a local override (e.g. `.devcontainer/devcontainer.local.json` or a separate workspace). Outbound is fully blocked, so resolve dependencies (`uv sync`, etc.) before switching, and run a proxy sidecar if the agent still needs API access.
+
+### Notes
+
+- The previous Claude-specific container (`claude/Dockerfile`, `compose.claude*.yml`, `scripts/claude-start.sh`, iptables-based firewall) has been removed. The Dev Container above is the single supported entry point.
+- Pulling Feature updates: `devcontainer up --workspace-folder . --remove-existing-container` (or VS Code → "Rebuild Container").
+- Host Docker socket is intentionally not mounted; the agent cannot manipulate host containers.

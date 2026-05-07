@@ -22,8 +22,12 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 ENV PATH="/workspace/.venv/bin:$PATH"
 
-# Install pyright dependencies
-RUN pyright --version
+# Install pyright dependencies (pyright's bundled Node.js requires libatomic1 on slim images)
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends libatomic1 \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/* \
+  && pyright --version
 
 CMD ["python"]
 
@@ -57,5 +61,10 @@ ENV UV_COMPILE_BYTECODE=1
 ENV UV_LINK_MODE=copy
 
 COPY --from=dev --chown=vscode: /usr/local/bin/uv /usr/local/bin/
+
+RUN mkdir -p /commandhistory /home/vscode/.claude /home/vscode/.config/gh \
+  && chown -R vscode:vscode /commandhistory /home/vscode/.claude /home/vscode/.config \
+  && ln -sf /home/vscode/.claude/.claude.json /home/vscode/.claude.json \
+  && chown -h vscode:vscode /home/vscode/.claude.json
 
 CMD ["sleep", "infinity"]

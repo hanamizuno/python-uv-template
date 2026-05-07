@@ -1,13 +1,45 @@
 {
-  "name": "python-uv",
-  "dockerComposeFile": [
-    "../compose.dev.yml",
-    "compose.yml"
-  ],
-  "service": "app",
+  "name": "python-uv-agent",
+  "build": {
+    "dockerfile": "../Dockerfile",
+    "context": "..",
+    "target": "devcontainer"
+  },
   "workspaceFolder": "/workspace",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
+  "remoteUser": "vscode",
+  "containerUser": "vscode",
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "username": "vscode",
+      "configureZshAsDefaultShell": false,
+      "installOhMyZsh": false,
+      "installOhMyZshConfig": false,
+      "upgradePackages": false
+    },
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/node:1": {},
+    "ghcr.io/anthropics/devcontainer-features/claude-code:1": {}
+  },
+  "overrideFeatureInstallOrder": [
+    "ghcr.io/devcontainers/features/common-utils",
+    "ghcr.io/devcontainers/features/github-cli",
+    "ghcr.io/devcontainers/features/node",
+    "ghcr.io/anthropics/devcontainer-features/claude-code"
+  ],
+  "mounts": [
+    "source=claude-config-${devcontainerId},target=/home/vscode/.claude,type=volume",
+    "source=gh-config-${devcontainerId},target=/home/vscode/.config/gh,type=volume",
+    "source=agent-history-${devcontainerId},target=/commandhistory,type=volume"
+  ],
+  "containerEnv": {
+    "HISTFILE": "/commandhistory/.bash_history",
+    "PROMPT_COMMAND": "history -a"
+  },
+  "waitFor": "postCreateCommand",
+  "postCreateCommand": "uv sync --frozen",
+  "postStartCommand": "test -d .venv || uv sync --frozen",
   "userEnvProbe": "loginInteractiveShell",
-  "overrideCommand": true,
   "customizations": {
     "vscode": {
       "extensions": [
@@ -18,6 +50,5 @@
         "tamasfe.even-better-toml"
       ]
     }
-  },
-  "postCreateCommand": "uv sync --frozen"
+  }
 }
