@@ -169,15 +169,17 @@ To add another agent CLI (e.g. Codex/Cursor), drop in either an upstream Feature
      ```bash
      devcontainer exec --workspace-folder . claude --dangerously-skip-permissions
      ```
-   - **GitHub CLI** (web flow):
-     ```bash
-     devcontainer exec --workspace-folder . gh auth login --hostname github.com --git-protocol https --web
-     ```
-     Or, to seed from an existing host token (`$GH_TOKEN`):
-     ```bash
-     devcontainer exec --workspace-folder . --remote-env GH_TOKEN_INPUT=$GH_TOKEN \
-       sh -c 'printf "%s\n" "$GH_TOKEN_INPUT" | env -u GH_TOKEN gh auth login --hostname github.com --with-token'
-     ```
+   - **GitHub CLI** — pick one of the following:
+     - **Web flow** (interactive, OAuth scopes selected at login):
+       ```bash
+       devcontainer exec --workspace-folder . gh auth login --hostname github.com --git-protocol https --web
+       ```
+     - **Seed from a host token** (e.g. `$GH_TOKEN` from `gh auth token`):
+       ```bash
+       devcontainer exec --workspace-folder . --remote-env GH_TOKEN_INPUT=$GH_TOKEN \
+         sh -c 'printf "%s\n" "$GH_TOKEN_INPUT" | env -u GH_TOKEN gh auth login --hostname github.com --with-token'
+       ```
+     - **Scoped PAT** (recommended for autonomous runs) — see [Restricting GitHub permissions](#restricting-github-permissions-pat) below.
    Credentials live in `claude-config-${devcontainerId}` and `gh-config-${devcontainerId}` volumes and survive `--remove-existing-container` rebuilds.
 
 ### Operating modes
@@ -189,8 +191,57 @@ To add another agent CLI (e.g. Codex/Cursor), drop in either an upstream Feature
   ```
   Then add `"runArgs": ["--network=agent-internal"]` to a local override (e.g. `.devcontainer/devcontainer.local.json` or a separate workspace). Outbound is fully blocked, so resolve dependencies (`uv sync`, etc.) before switching, and run a proxy sidecar if the agent still needs API access.
 
+### Restricting GitHub permissions (PAT)
+
+When Claude Code runs with `--dangerously-skip-permissions`, it inherits whatever scopes the stored `gh` token has. To limit blast radius, seed the volume with a dedicated PAT instead of your everyday `$GH_TOKEN`.
+
+**Steps:**
+
+1. Issue a PAT in GitHub:
+   - **Fine-grained** (preferred for narrow blast radius) — pick the target repo(s) and the minimum permissions from the table below.
+   - **Classic** with the smallest scope set that covers your needs (e.g. `repo` only) — use this if a `gh` operation you rely on is not yet supported by fine-grained PATs.
+2. Replace any existing auth so scopes don't accumulate:
+   ```bash
+   devcontainer exec --workspace-folder . gh auth logout --hostname github.com
+   ```
+3. Seed the volume with the new PAT (avoid leaving the value in shell history — leading-space the line, or read from a file):
+   ```bash
+    GH_PAT='github_pat_xxx' devcontainer exec --workspace-folder . --remote-env GH_TOKEN_INPUT=$GH_PAT \
+      sh -c 'printf "%s\n" "$GH_TOKEN_INPUT" | env -u GH_TOKEN gh auth login --hostname github.com --with-token'
+   unset GH_PAT
+   ```
+   Or, from a token file:
+   ```bash
+   devcontainer exec --workspace-folder . --remote-env GH_TOKEN_INPUT="$(cat ~/.config/agent-gh-pat)" \
+     sh -c 'printf "%s\n" "$GH_TOKEN_INPUT" | env -u GH_TOKEN gh auth login --hostname github.com --with-token'
+   ```
+4. Verify the granted scopes:
+   ```bash
+   devcontainer exec --workspace-folder . gh auth status
+   devcontainer exec --workspace-folder . sh -c '
+     gh auth token | xargs -I{} curl -sI -H "Authorization: token {}" https://api.github.com/user \
+       | grep -iE "x-oauth-scopes|x-accepted"
+   '
+   ```
+   Classic PATs show granted scopes via `x-oauth-scopes`. Fine-grained PATs show empty there — read the resource permissions on the PAT settings page directly.
+
+**Suggested minimum permissions (fine-grained):**
+
+| Operation Claude should perform | Permission |
+|---|---|
+| Read issues / PRs / repo metadata | `Issues: Read`, `Pull requests: Read`, `Metadata: Read` |
+| Comment on / open / close PRs | `+ Pull requests: Write`, `Issues: Write` |
+| HTTPS `git push` / commit | `+ Contents: Write` (repo-scoped) |
+| GitHub Actions read/dispatch | `+ Actions: Read` (or `Write` if dispatch needed) |
+| Repository creation / settings | `+ Administration: Write` (org may require approval) |
+
+**Notes / gotchas:**
+
+- Fine-grained PATs do not yet cover every `gh` subcommand — if you hit a 403 or "PAT not supported" error, fall back to a tightly-scoped classic PAT.
+- The token sits in `~/.config/gh/hosts.yml` inside the volume. Anyone with shell access in the container can read it, so treat compromise of the container as compromise of the token's scope.
+- Rotate by repeating step 2 + 3 — you do not need to recreate the volume.
+
 ### Notes
 
-- The previous Claude-specific container (`claude/Dockerfile`, `compose.claude*.yml`, `scripts/claude-start.sh`, iptables-based firewall) has been removed. The Dev Container above is the single supported entry point.
 - Pulling Feature updates: `devcontainer up --workspace-folder . --remove-existing-container` (or VS Code → "Rebuild Container").
 - Host Docker socket is intentionally not mounted; the agent cannot manipulate host containers.
