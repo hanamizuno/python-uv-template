@@ -1,0 +1,13 @@
+#:schema https://developers.openai.com/codex/config-schema.json
+
+# The devcontainer is already the isolation boundary for autonomous agent work.
+# Keep writes scoped to the checked-out workspace, but avoid interactive pauses.
+approval_policy = "never"
+sandbox_mode = "workspace-write"
+project_doc_max_bytes = 65536
+
+[sandbox_workspace_write]
+network_access = true
+
+[projects."/workspace"]
+trust_level = "trusted"

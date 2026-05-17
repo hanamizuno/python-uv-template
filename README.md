@@ -13,7 +13,7 @@ This template targets **non-distributed Python applications** (services, interna
 *   **Modern Python Stack:** Uses Python 3.14+ and `uv` for fast dependency management.
 *   **Containerized Development:**
     *   **Docker & Docker Compose:** Provides consistent development and production environments using multi-stage builds (`dev`, `prod`, `devcontainer`).
-    *   **VSCode Dev Containers:** Includes a `.devcontainer/devcontainer.json` configuration that layers the AI agent toolchain (Claude Code CLI, GitHub CLI, common utilities) on top of the project's Python environment via [Dev Container Features](https://containers.dev/implementors/features/) — no per-project agent Dockerfile needed.
+    *   **VSCode Dev Containers:** Includes a `.devcontainer/devcontainer.json` configuration that layers the AI agent toolchain (Claude Code CLI, Codex CLI, GitHub CLI, common utilities) on top of the project's Python environment via [Dev Container Features](https://containers.dev/implementors/features/) and post-create setup.
 *   **Development Tools:** Integrated with standard development tools:
     *   [`ruff`](https://docs.astral.sh/ruff/) for linting and formatting.
     *   [`pyright`](https://microsoft.github.io/pyright/) for static type checking.
@@ -40,7 +40,9 @@ cf. https://zenn.dev/dajiaji/articles/47164ff27d2123
 .
 ├── .claude/                    # Claude Code shared settings (committed)
 ├── .devcontainer/              # Dev Container config (also runs the AI agent toolchain via Features)
-│   └── devcontainer.json
+│   ├── codex-config.toml        # Initial Codex CLI config copied into the persisted ~/.codex volume
+│   ├── devcontainer.json
+│   └── post-create.sh
 ├── .dockerignore
 ├── .editorconfig
 ├── .github/                    # GitHub-specific files
@@ -148,7 +150,7 @@ task test_cov
 
 ## AI Agent Dev Container
 
-The Dev Container is also the runtime for AI coding agents (Claude Code, etc.). The agent toolchain is layered on top of the Python environment via [Dev Container Features](https://containers.dev/implementors/features/), so no per-project `claude/` directory or compose override is needed.
+The Dev Container is also the runtime for AI coding agents (Claude Code, Codex, etc.). The agent toolchain is layered on top of the Python environment via [Dev Container Features](https://containers.dev/implementors/features/) and post-create setup, so no per-project agent compose override is needed.
 
 ### Included Features
 
@@ -158,8 +160,9 @@ The Dev Container is also the runtime for AI coding agents (Claude Code, etc.). 
 | GitHub CLI | `ghcr.io/devcontainers/features/github-cli:1` |
 | Node.js (required by `claude-code`) | `ghcr.io/devcontainers/features/node:1` |
 | Claude Code CLI | `ghcr.io/anthropics/devcontainer-features/claude-code:1` |
+| Codex CLI | Installed by `.devcontainer/post-create.sh` with `npm install -g @openai/codex` |
 
-To add another agent CLI (e.g. Codex/Cursor), drop in either an upstream Feature or a local `./.devcontainer/<feature-id>/` directory and reference it from `features` in `devcontainer.json`.
+To add another agent CLI (e.g. Cursor), drop in either an upstream Feature, a local `./.devcontainer/<feature-id>/` directory referenced from `features`, or an idempotent install step in `.devcontainer/post-create.sh`.
 
 ### Initial setup
 
@@ -168,6 +171,10 @@ To add another agent CLI (e.g. Codex/Cursor), drop in either an upstream Feature
    - **Claude Code**: just start the agent — on first launch it shows the login flow inline. Do NOT pass `/login` as a CLI argument; that is a slash command for an active session and triggers the flow twice when used from the host shell.
      ```bash
      devcontainer exec --workspace-folder . claude --dangerously-skip-permissions
+     ```
+   - **Codex CLI**: start the agent and sign in with ChatGPT, or configure `OPENAI_API_KEY` inside the container. The first container creation copies `.devcontainer/codex-config.toml` into the persisted `~/.codex/config.toml` volume.
+     ```bash
+     devcontainer exec --workspace-folder . codex
      ```
    - **GitHub CLI** — pick one of the following:
      - **Web flow** (interactive, OAuth scopes selected at login):
@@ -180,11 +187,11 @@ To add another agent CLI (e.g. Codex/Cursor), drop in either an upstream Feature
          sh -c 'printf "%s\n" "$GH_TOKEN_INPUT" | env -u GH_TOKEN gh auth login --hostname github.com --with-token'
        ```
      - **Scoped PAT** (recommended for autonomous runs) — see [Restricting GitHub permissions](#restricting-github-permissions-pat) below.
-   Credentials live in `claude-config-${devcontainerId}` and `gh-config-${devcontainerId}` volumes and survive `--remove-existing-container` rebuilds.
+   Credentials live in `claude-config-${devcontainerId}`, `codex-config-${devcontainerId}`, and `gh-config-${devcontainerId}` volumes and survive `--remove-existing-container` rebuilds.
 
 ### Operating modes
 
-- **Default (egress open)** — outbound traffic is unrestricted. Host credentials are *not* bind-mounted (Claude/`gh` auth lives in container-scoped volumes), and the host Docker socket is not exposed. The defense surface for `--dangerously-skip-permissions` is: non-root `vscode` user, workspace-only mount, container-scoped auth volumes.
+- **Default (egress open)** — outbound traffic is unrestricted. Host credentials are *not* bind-mounted (Claude/Codex/`gh` auth lives in container-scoped volumes), and the host Docker socket is not exposed. The defense surface for autonomous agent runs is: non-root `vscode` user, workspace-only mount, container-scoped auth volumes. Codex is seeded with `approval_policy = "never"` and `sandbox_mode = "workspace-write"` in its container-scoped config, which lets it work without pauses while keeping writes scoped to the workspace.
 - **Isolated mode (optional)** — for a stricter sandbox, create a Docker network with no egress and attach the container to it:
   ```bash
   docker network create --internal agent-internal

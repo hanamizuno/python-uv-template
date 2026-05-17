@@ -29,6 +29,7 @@
   ],
   "mounts": [
     "source=claude-config-${devcontainerId},target=/home/vscode/.claude,type=volume",
+    "source=codex-config-${devcontainerId},target=/home/vscode/.codex,type=volume",
     "source=gh-config-${devcontainerId},target=/home/vscode/.config/gh,type=volume",
     "source=agent-history-${devcontainerId},target=/commandhistory,type=volume"
   ],
@@ -37,7 +38,7 @@
     "PROMPT_COMMAND": "history -a"
   },
   "waitFor": "postCreateCommand",
-  "postCreateCommand": "uv sync --frozen",
+  "postCreateCommand": ".devcontainer/post-create.sh",
   "postStartCommand": "test -d .venv || uv sync --frozen",
   "userEnvProbe": "loginInteractiveShell",
   "customizations": {
