@@ -30,12 +30,19 @@
   "mounts": [
     "source=claude-config-${devcontainerId},target=/home/vscode/.claude,type=volume",
     "source=codex-config-${devcontainerId},target=/home/vscode/.codex,type=volume",
+    "source=hermes-config-${devcontainerId},target=/home/vscode/.hermes,type=volume",
     "source=gh-config-${devcontainerId},target=/home/vscode/.config/gh,type=volume",
     "source=agent-history-${devcontainerId},target=/commandhistory,type=volume"
   ],
   "containerEnv": {
     "HISTFILE": "/commandhistory/.bash_history",
     "PROMPT_COMMAND": "history -a"
+  },
+  "remoteEnv": {
+    "OPENROUTER_API_KEY": "${localEnv:OPENROUTER_API_KEY}",
+    "OPENAI_API_KEY": "${localEnv:OPENAI_API_KEY}",
+    "ANTHROPIC_API_KEY": "${localEnv:ANTHROPIC_API_KEY}",
+    "NOUS_PORTAL_API_KEY": "${localEnv:NOUS_PORTAL_API_KEY}"
   },
   "waitFor": "postCreateCommand",
   "postCreateCommand": ".devcontainer/post-create.sh",

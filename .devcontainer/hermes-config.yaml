@@ -1,0 +1,4 @@
+# The devcontainer is already the isolation boundary for autonomous agent work.
+# Disable interactive approvals so Hermes can iterate without blocking pauses.
+approvals:
+  mode: "off"
