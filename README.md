@@ -162,6 +162,7 @@ The Dev Container is also the runtime for AI coding agents (Claude Code, Codex, 
 | Node.js (required by `claude-code`) | `ghcr.io/devcontainers/features/node:1` |
 | Claude Code CLI | `ghcr.io/anthropics/devcontainer-features/claude-code:1` |
 | Codex CLI | Installed by `.devcontainer/post-create.sh` with `npm install -g @openai/codex` |
+| Codex plugin for Claude Code | Installed by `.devcontainer/post-create.sh` with `claude plugin install codex@openai-codex`, so Claude Code can delegate to Codex on demand (the `codex-rescue` subagent + `/codex` skills) |
 | Hermes Agent | Installed by `.devcontainer/post-create.sh` via the upstream `NousResearch/hermes-agent` per-user `uv` installer |
 
 To add another agent CLI (e.g. Cursor), drop in either an upstream Feature, a local `./.devcontainer/<feature-id>/` directory referenced from `features`, or an idempotent install step in `.devcontainer/post-create.sh`.
@@ -174,7 +175,7 @@ To add another agent CLI (e.g. Cursor), drop in either an upstream Feature, a lo
      ```bash
      devcontainer exec --workspace-folder . claude --dangerously-skip-permissions
      ```
-   - **Codex CLI**: start the agent and sign in with ChatGPT, or configure `OPENAI_API_KEY` inside the container. The first container creation copies `.devcontainer/codex-config.toml` into the persisted `~/.codex/config.toml` volume.
+   - **Codex CLI**: start the agent and sign in with ChatGPT, or configure `OPENAI_API_KEY` inside the container. The first container creation copies `.devcontainer/codex-config.toml` into the persisted `~/.codex/config.toml` volume. The same post-create step also installs the `codex@openai-codex` plugin into Claude Code's `~/.claude` volume, so Claude Code can call Codex on demand (the `codex-rescue` subagent + `/codex` skills) without re-installing the plugin per session.
      ```bash
      devcontainer exec --workspace-folder . codex
      ```

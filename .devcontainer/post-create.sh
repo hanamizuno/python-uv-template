@@ -13,6 +13,14 @@ if [ ! -f "$HOME/.codex/config.toml" ]; then
   cp .devcontainer/codex-config.toml "$HOME/.codex/config.toml"
 fi
 
+# Register Codex as a Claude Code plugin so Claude Code can delegate to Codex on
+# demand (the codex-rescue subagent + /codex skills). The ~/.claude volume persists
+# across rebuilds, so guard on "already installed" to stay idempotent.
+if ! claude plugin list 2>/dev/null | grep -q 'codex@openai-codex'; then
+  claude plugin marketplace add openai/codex-plugin-cc || true
+  claude plugin install codex@openai-codex
+fi
+
 if ! command -v hermes >/dev/null 2>&1; then
   curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
 fi
