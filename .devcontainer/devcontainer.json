@@ -45,8 +45,9 @@
     "NOUS_PORTAL_API_KEY": "${localEnv:NOUS_PORTAL_API_KEY}"
   },
   "waitFor": "postCreateCommand",
+  "initializeCommand": ".devcontainer/initialize.sh",
   "postCreateCommand": ".devcontainer/post-create.sh",
-  "postStartCommand": "test -d .venv || uv sync --frozen",
+  "postStartCommand": ".devcontainer/post-start.sh",
   "userEnvProbe": "loginInteractiveShell",
   "customizations": {
     "vscode": {

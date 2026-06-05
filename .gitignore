@@ -26,3 +26,6 @@ cover/
 
 # macOS
 .DS_Store
+
+# Host global gitignore staged for the devcontainer (see .devcontainer/initialize.sh)
+.devcontainer/host-gitignore

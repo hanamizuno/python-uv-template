@@ -196,6 +196,12 @@ To add another agent CLI (e.g. Cursor), drop in either an upstream Feature, a lo
      - **Scoped PAT** (recommended for autonomous runs) — see [Restricting GitHub permissions](#restricting-github-permissions-pat) below.
    Credentials live in `claude-config-${devcontainerId}`, `codex-config-${devcontainerId}`, `hermes-config-${devcontainerId}`, and `gh-config-${devcontainerId}` volumes and survive `--remove-existing-container` rebuilds.
 
+### Host gitignore inheritance
+
+The container inherits the host's **global gitignore** so git inside the container hides the same noise (editor files, OS junk) as on the host. On every container create/start, `.devcontainer/initialize.sh` (an `initializeCommand`, runs on the host) resolves the host's global ignore — `core.excludesFile` → `~/.config/git/ignore` (XDG) → `~/.gitignore`, dereferencing symlinks (e.g. Nix/home-manager targets) — and stages it as `.devcontainer/host-gitignore` (git-ignored, never committed). `.devcontainer/post-start.sh` then copies it to `~/.config/git/ignore` inside the container, git's XDG default, so no `git config` is touched. If the host has no global gitignore the step is a no-op and the container starts normally.
+
+> **Windows hosts:** `initializeCommand` runs a bash script on the host, so native Windows needs Git Bash/WSL on `PATH` — otherwise the sync is skipped but the container still starts.
+
 ### Operating modes
 
 - **Default (egress open)** — outbound traffic is unrestricted. Host credentials are *not* bind-mounted (Claude/Codex/`gh` auth lives in container-scoped volumes), and the host Docker socket is not exposed. The defense surface for autonomous agent runs is: non-root `vscode` user, workspace-only mount, container-scoped auth volumes. Codex is seeded with `approval_policy = "never"` and `sandbox_mode = "workspace-write"` in its container-scoped config, which lets it work without pauses while keeping writes scoped to the workspace.
