@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Runs on the HOST before container create/start (initializeCommand).
-# Stages the host's global gitignore so post-start.sh can seed it into the
-# container. Must never block container startup: every path exits 0.
+# Stages host config (global gitignore, Claude Code settings/statusline) so
+# post-start.sh can seed it into the container. Must never block container
+# startup: every path exits 0.
 set -u
 
 STAGE=".devcontainer/host-gitignore"
@@ -25,6 +26,28 @@ rm -f "$STAGE"
 if [ -n "${SRC:-}" ]; then
   # -L dereferences symlinks (e.g. Nix-store/home-manager targets).
   cp -L "$SRC" "$STAGE" 2>/dev/null && chmod 644 "$STAGE" 2>/dev/null || rm -f "$STAGE"
+fi
+
+# --- Claude Code settings + statusline --------------------------------------
+# Auth/state (~/.claude.json, ~/.claude/.credentials.json) is intentionally NOT
+# staged; it stays in the container-scoped volume (see README).
+CLAUDE_STAGE=".devcontainer/host-claude"
+CONTAINER_HOME="/home/vscode"
+
+rm -rf "$CLAUDE_STAGE"
+
+if [ -f "$HOME/.claude/settings.json" ] || [ -f "$HOME/.claude/statusline-command.sh" ]; then
+  mkdir -p "$CLAUDE_STAGE"
+  if [ -f "$HOME/.claude/settings.json" ]; then
+    # Rewrite host-home paths (e.g. the statusLine command) to the container home.
+    sed "s|$HOME|$CONTAINER_HOME|g" "$HOME/.claude/settings.json" \
+      >"$CLAUDE_STAGE/settings.json" 2>/dev/null || rm -f "$CLAUDE_STAGE/settings.json"
+  fi
+  if [ -f "$HOME/.claude/statusline-command.sh" ]; then
+    cp -L "$HOME/.claude/statusline-command.sh" "$CLAUDE_STAGE/statusline-command.sh" 2>/dev/null \
+      && chmod 755 "$CLAUDE_STAGE/statusline-command.sh" 2>/dev/null \
+      || rm -f "$CLAUDE_STAGE/statusline-command.sh"
+  fi
 fi
 
 exit 0

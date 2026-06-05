@@ -196,9 +196,14 @@ To add another agent CLI (e.g. Cursor), drop in either an upstream Feature, a lo
      - **Scoped PAT** (recommended for autonomous runs) — see [Restricting GitHub permissions](#restricting-github-permissions-pat) below.
    Credentials live in `claude-config-${devcontainerId}`, `codex-config-${devcontainerId}`, `hermes-config-${devcontainerId}`, and `gh-config-${devcontainerId}` volumes and survive `--remove-existing-container` rebuilds.
 
-### Host gitignore inheritance
+### Host config inheritance
 
-The container inherits the host's **global gitignore** so git inside the container hides the same noise (editor files, OS junk) as on the host. On every container create/start, `.devcontainer/initialize.sh` (an `initializeCommand`, runs on the host) resolves the host's global ignore — `core.excludesFile` → `~/.config/git/ignore` (XDG) → `~/.gitignore`, dereferencing symlinks (e.g. Nix/home-manager targets) — and stages it as `.devcontainer/host-gitignore` (git-ignored, never committed). `.devcontainer/post-start.sh` then copies it to `~/.config/git/ignore` inside the container, git's XDG default, so no `git config` is touched. If the host has no global gitignore the step is a no-op and the container starts normally.
+On every container create/start, `.devcontainer/initialize.sh` (an `initializeCommand`, runs on the host) stages selected host config into git-ignored files under `.devcontainer/`, and `.devcontainer/post-start.sh` seeds them inside the container:
+
+- **Global gitignore** — resolved via `core.excludesFile` → `~/.config/git/ignore` (XDG) → `~/.gitignore`, dereferencing symlinks (e.g. Nix/home-manager targets); staged as `.devcontainer/host-gitignore` and copied to `~/.config/git/ignore` (git's XDG default, so no `git config` is touched). Overwritten on every start — the host is the source of truth.
+- **Claude Code settings + statusline** — `~/.claude/settings.json` is staged with host-home paths rewritten to `/home/vscode` (so e.g. the `statusLine` command keeps working) and **deep-merged** into the container's `~/.claude/settings.json` with `jq` (host wins per key; container-only keys such as in-container plugin enables survive). `~/.claude/statusline-command.sh` is copied alongside. Auth/state (`~/.claude.json`, `~/.claude/.credentials.json`) is intentionally **not** staged — authentication stays in the container-scoped volume.
+
+If a host file does not exist its step is a no-op and the container starts normally.
 
 > **Windows hosts:** `initializeCommand` runs a bash script on the host, so native Windows needs Git Bash/WSL on `PATH` — otherwise the sync is skipped but the container still starts.
 
