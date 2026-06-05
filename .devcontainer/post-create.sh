@@ -3,8 +3,10 @@ set -euo pipefail
 
 uv sync --frozen
 
+# No sudo: npm is nvm-managed (not on sudo's secure_path) and the nvm tree is
+# vscode-writable, so a plain global install works.
 if ! command -v codex >/dev/null 2>&1; then
-  sudo npm install -g @openai/codex
+  npm install -g @openai/codex
 fi
 
 mkdir -p "$HOME/.codex"
