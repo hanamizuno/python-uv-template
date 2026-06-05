@@ -5,7 +5,7 @@
 - Tests: co-located under each package's `tests/` directory with `*_test.py` files (e.g., `myapp/tests/main_test.py`). `tests/` directories intentionally have no `__init__.py` (pytest `--import-mode=importlib`).
 - Docs & plans: `docs/` (e.g., `docs/agents/*.md`).
 - Tooling: `pyproject.toml` manages deps and tasks; `uv.lock` pins versions.
-- Containers: `Dockerfile` (multi-stage: `dev`, `prod`, `devcontainer`), `compose.dev.yml` (dev), `compose.yml` (prod). The Dev Container (`.devcontainer/devcontainer.json`) is also where AI agent CLIs (Claude Code, Codex, Hermes, GitHub CLI) are layered in via Dev Container Features and post-create hooks; it also inherits host config — global gitignore and Claude Code settings/statusline — staged by `.devcontainer/initialize.sh` and seeded by `.devcontainer/post-start.sh`.
+- Containers: `Dockerfile` (multi-stage: `dev`, `prod`, `devcontainer`), `compose.dev.yml` (dev), `compose.yml` (prod). The Dev Container (`.devcontainer/devcontainer.json`) is also where AI agent CLIs (Claude Code, Codex, GitHub CLI) are layered in via Dev Container Features and post-create hooks; it also inherits host config — global gitignore and Claude Code settings/statusline — staged by `.devcontainer/initialize.sh` and seeded by `.devcontainer/post-start.sh`.
 
 ## Build, Test, and Development Commands
 - Install (local uv): `uv sync` (dev deps included).

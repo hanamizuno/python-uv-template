@@ -13,7 +13,7 @@ This template targets **non-distributed Python applications** (services, interna
 *   **Modern Python Stack:** Uses Python 3.14+ and `uv` for fast dependency management.
 *   **Containerized Development:**
     *   **Docker & Docker Compose:** Provides consistent development and production environments using multi-stage builds (`dev`, `prod`, `devcontainer`).
-    *   **VSCode Dev Containers:** Includes a `.devcontainer/devcontainer.json` configuration that layers the AI agent toolchain (Claude Code CLI, Codex CLI, Hermes Agent, GitHub CLI, common utilities) on top of the project's Python environment via [Dev Container Features](https://containers.dev/implementors/features/) and post-create setup.
+    *   **VSCode Dev Containers:** Includes a `.devcontainer/devcontainer.json` configuration that layers the AI agent toolchain (Claude Code CLI, Codex CLI, GitHub CLI, common utilities) on top of the project's Python environment via [Dev Container Features](https://containers.dev/implementors/features/) and post-create setup.
 *   **Development Tools:** Integrated with standard development tools:
     *   [`ruff`](https://docs.astral.sh/ruff/) for linting and formatting.
     *   [`pyright`](https://microsoft.github.io/pyright/) for static type checking.
@@ -41,7 +41,6 @@ cf. https://zenn.dev/dajiaji/articles/47164ff27d2123
 ├── .claude/                    # Claude Code shared settings (committed)
 ├── .devcontainer/              # Dev Container config (also runs the AI agent toolchain via Features)
 │   ├── codex-config.toml        # Initial Codex CLI config copied into the persisted ~/.codex volume
-│   ├── hermes-config.yaml       # Initial Hermes Agent config copied into the persisted ~/.hermes volume
 │   ├── devcontainer.json
 │   └── post-create.sh
 ├── .dockerignore
@@ -163,7 +162,6 @@ The Dev Container is also the runtime for AI coding agents (Claude Code, Codex, 
 | Claude Code CLI | `ghcr.io/anthropics/devcontainer-features/claude-code:1` |
 | Codex CLI | Installed by `.devcontainer/post-create.sh` with `npm install -g @openai/codex` |
 | Codex plugin for Claude Code | Installed by `.devcontainer/post-create.sh` with `claude plugin install codex@openai-codex`, so Claude Code can delegate to Codex on demand (the `codex-rescue` subagent + `/codex` skills) |
-| Hermes Agent | Installed by `.devcontainer/post-create.sh` via the upstream `NousResearch/hermes-agent` per-user `uv` installer |
 
 To add another agent CLI (e.g. Cursor), drop in either an upstream Feature, a local `./.devcontainer/<feature-id>/` directory referenced from `features`, or an idempotent install step in `.devcontainer/post-create.sh`.
 
@@ -179,10 +177,6 @@ To add another agent CLI (e.g. Cursor), drop in either an upstream Feature, a lo
      ```bash
      devcontainer exec --workspace-folder . codex
      ```
-   - **Hermes Agent**: the installer only drops the binary; pick a provider/model after first launch with `hermes setup` (full wizard) or `hermes model` (provider/model only). Common LLM provider API keys (`OPENROUTER_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `NOUS_PORTAL_API_KEY`) are forwarded from the host shell via `remoteEnv` — set them on the host once and they appear inside the container. The first container creation copies `.devcontainer/hermes-config.yaml` into the persisted `~/.hermes/config.yaml` volume (approvals disabled — the container is the isolation boundary).
-     ```bash
-     devcontainer exec --workspace-folder . hermes
-     ```
    - **GitHub CLI** — pick one of the following:
      - **Web flow** (interactive, OAuth scopes selected at login):
        ```bash
@@ -194,7 +188,7 @@ To add another agent CLI (e.g. Cursor), drop in either an upstream Feature, a lo
          sh -c 'printf "%s\n" "$GH_TOKEN_INPUT" | env -u GH_TOKEN gh auth login --hostname github.com --with-token'
        ```
      - **Scoped PAT** (recommended for autonomous runs) — see [Restricting GitHub permissions](#restricting-github-permissions-pat) below.
-   Credentials live in `claude-config-${devcontainerId}`, `codex-config-${devcontainerId}`, `hermes-config-${devcontainerId}`, and `gh-config-${devcontainerId}` volumes and survive `--remove-existing-container` rebuilds.
+   Credentials live in `claude-config-${devcontainerId}`, `codex-config-${devcontainerId}`, and `gh-config-${devcontainerId}` volumes and survive `--remove-existing-container` rebuilds.
 
 ### Host config inheritance
 
@@ -226,14 +220,14 @@ The container compresses the blast radius from "everything the host user can tou
 
 If you need any of those, run the agent inside a higher-assurance sandbox such as [Docker Sandbox](https://docs.docker.com/ai/sandboxes/) (microVM kernel boundary, allow/deny networking, per-sandbox Docker daemon) and treat this devcontainer as the inner workspace.
 
-**Host loopback access is intentionally not opened.** `host.docker.internal` is not added by default — opening it would expose every `0.0.0.0`-bound host service (local LLM servers, dev DBs, debug dashboards) to the agent. If you specifically need it — e.g. to point Hermes at a locally hosted OpenAI-compatible endpoint — add it as a local override, not a project default:
+**Host loopback access is intentionally not opened.** `host.docker.internal` is not added by default — opening it would expose every `0.0.0.0`-bound host service (local LLM servers, dev DBs, debug dashboards) to the agent. If you specifically need it — e.g. to point an agent at a locally hosted OpenAI-compatible endpoint — add it as a local override, not a project default:
 
 ```jsonc
 // .devcontainer/devcontainer.local.json (per-user override; do not commit)
 { "runArgs": ["--add-host=host.docker.internal:host-gateway"] }
 ```
 
-Then bind the host service to `0.0.0.0` (not `127.0.0.1`) so the bridge network can reach it, and configure the agent (`hermes model`, etc.) to use `http://host.docker.internal:<port>`.
+Then bind the host service to `0.0.0.0` (not `127.0.0.1`) so the bridge network can reach it, and configure the agent to use `http://host.docker.internal:<port>`.
 
 ### Restricting GitHub permissions (PAT)
 

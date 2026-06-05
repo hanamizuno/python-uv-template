@@ -22,13 +22,3 @@ if ! claude plugin list 2>/dev/null | grep -q 'codex@openai-codex'; then
   claude plugin marketplace add openai/codex-plugin-cc || true
   claude plugin install codex@openai-codex
 fi
-
-if ! command -v hermes >/dev/null 2>&1; then
-  curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
-fi
-
-mkdir -p "$HOME/.hermes"
-
-if [ ! -f "$HOME/.hermes/config.yaml" ]; then
-  cp .devcontainer/hermes-config.yaml "$HOME/.hermes/config.yaml"
-fi
