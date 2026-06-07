@@ -32,6 +32,8 @@
     "source=codex-config-${devcontainerId},target=/home/vscode/.codex,type=volume",
     "source=gh-config-${devcontainerId},target=/home/vscode/.config/gh,type=volume",
     "source=agent-history-${devcontainerId},target=/commandhistory,type=volume"
+    // 追加例: ホストの特定フォルダを参照用にマウントする場合
+    // "source=${localEnv:HOME}/docs/reference,target=/mnt/reference,type=bind,readonly"
   ],
   "containerEnv": {
     "HISTFILE": "/commandhistory/.bash_history",
