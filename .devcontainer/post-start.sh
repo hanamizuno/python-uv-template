@@ -12,6 +12,17 @@ if [ -f .devcontainer/host-gitignore ]; then
   cp .devcontainer/host-gitignore "$HOME/.config/git/ignore"
 fi
 
+# Seed the host's git identity (staged by initialize.sh). Applied via
+# `git config --global` so container-side git config (e.g. safe.directory
+# written by features) is left untouched. Overwritten on every start — the
+# host is the source of truth.
+if [ -f .devcontainer/host-gituser ]; then
+  name="$(git config --file .devcontainer/host-gituser --get user.name 2>/dev/null || true)"
+  email="$(git config --file .devcontainer/host-gituser --get user.email 2>/dev/null || true)"
+  if [ -n "$name" ]; then git config --global user.name "$name"; fi
+  if [ -n "$email" ]; then git config --global user.email "$email"; fi
+fi
+
 # Seed Claude Code config staged by initialize.sh. settings.json is deep-merged
 # (host wins per key) instead of overwritten because Claude Code itself writes
 # to it inside the container — container-only keys (plugin enables, /config

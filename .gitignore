@@ -29,4 +29,5 @@ cover/
 
 # Host config staged for the devcontainer (see .devcontainer/initialize.sh)
 .devcontainer/host-gitignore
+.devcontainer/host-gituser
 .devcontainer/host-claude/
