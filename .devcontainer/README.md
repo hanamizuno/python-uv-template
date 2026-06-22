@@ -87,6 +87,7 @@ When Claude Code runs with `--dangerously-skip-permissions`, it inherits whateve
 **Steps:**
 
 1. Issue a PAT in GitHub:
+   - **Quick link** — open this [prefilled template](https://github.com/settings/personal-access-tokens/new?name=agent-devcontainer&description=Agent%20devcontainer%20baseline&expires_in=90&contents=write&pull_requests=write&issues=write&metadata=read&actions=read) (Repository permissions: `Contents: Write`, `Pull requests: Write`, `Issues: Write`, `Metadata: Read`, `Actions: Read`; 90-day expiry), pick the target repo(s), and click *Generate token*. Tweak the URL to derive narrower templates (e.g. drop `pull_requests=write` for a read-only review token; bump `actions=read` to `actions=write` for workflow dispatch). `Administration: Write` is intentionally not in the baseline — add it manually when you actually need repo creation / settings changes.
    - **Fine-grained** (preferred for narrow blast radius) — pick the target repo(s) and the minimum permissions from the table below.
    - **Classic** with the smallest scope set that covers your needs (e.g. `repo` only) — use this if a `gh` operation you rely on is not yet supported by fine-grained PATs.
 2. Replace any existing auth so scopes don't accumulate:
