@@ -1,0 +1,35 @@
+name: Sync Labels
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/labels.yml"
+      - ".github/scripts/sync-labels.sh"
+      - ".github/workflows/labels.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/labels.yml"
+      - ".github/scripts/sync-labels.sh"
+      - ".github/workflows/labels.yml"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Sync labels
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DRY_RUN: ${{ github.event_name == 'pull_request' && '1' || '0' }}
+        run: bash .github/scripts/sync-labels.sh .github/labels.yml
