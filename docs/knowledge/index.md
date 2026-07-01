@@ -23,7 +23,7 @@ Unlike user-facing docs (`README.md`) or AI agent guidelines (`AGENTS.md`), this
 
 * `index.md` and `log.md` are reserved filenames — do not use them for concept documents.
 * Only the bundle-root `index.md` may carry an `okf_version` frontmatter field.
-* Every other `.md` file **must have frontmatter**, and at minimum must include a `type`.
+* Every other `.md` file **must have frontmatter**, and at minimum must include a `type`. Reserved files are exempt: `log.md` carries no frontmatter, and the subdirectory `index.md` files in this template carry `type: Index` by convention, not requirement.
 * Prefer **bundle-root-relative** links (start with `/`, e.g. `/docs/knowledge/architecture/sample-service-overview.md`). This survives file moves better than relative links.
 * One concept per file. Directory nesting expresses parent/child relationships.
 * Recommended fields: `type` (required), `title`, `description`, `resource`, `tags`, `timestamp`.

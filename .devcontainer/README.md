@@ -50,6 +50,8 @@ On every container create/start, `./initialize.sh` (an `initializeCommand`, runs
 
 If a host file does not exist its step is a no-op and the container starts normally.
 
+The staged `host-*` files (`host-gitignore`, `host-gituser`, `host-claude/`) are git-ignored local artifacts containing personal config. A `git clone` never carries them, but a plain filesystem copy (`cp -r`, zip) of a checkout would — exclude them when copying this template outside git.
+
 > **Windows hosts:** `initializeCommand` runs a bash script on the host, so native Windows needs Git Bash/WSL on `PATH` — otherwise the sync is skipped but the container still starts.
 
 ## Operating modes
