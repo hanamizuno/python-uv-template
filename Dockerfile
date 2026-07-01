@@ -1,15 +1,15 @@
 # cf. https://github.com/astral-sh/uv-docker-example/blob/main/Dockerfile
-ARG PYTHON_VERSION=3.14
-ARG DEBIAN_VERSION=bookworm
-ARG UV_VERSION=python${PYTHON_VERSION}-${DEBIAN_VERSION}-slim
-
-# ===== Stage 1: development =====
-FROM ghcr.io/astral-sh/uv:$UV_VERSION AS dev
-
-WORKDIR /workspace
+# Base images are digest-pinned for reproducible builds; Dependabot (docker ecosystem)
+# keeps the digests up to date.
+FROM ghcr.io/astral-sh/uv:python3.14-bookworm-slim@sha256:7cf77f594be8042dab6daa9fe326f90962252268b4f120a7f5dccce4d947e6c1 AS base
 
 ENV UV_COMPILE_BYTECODE=1
 ENV UV_LINK_MODE=copy
+
+# ===== Stage 1: development =====
+FROM base AS dev
+
+WORKDIR /workspace
 
 RUN --mount=type=cache,target=/root/.cache/uv \
   --mount=type=bind,source=uv.lock,target=uv.lock \
@@ -23,6 +23,8 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 ENV PATH="/workspace/.venv/bin:$PATH"
 
 # Install pyright dependencies (pyright's bundled Node.js requires libatomic1 on slim images)
+# DL3008: Debian point releases drop old package versions, so pinning breaks builds
+# hadolint ignore=DL3008
 RUN apt-get update \
   && apt-get install -y --no-install-recommends libatomic1 \
   && apt-get clean \
@@ -32,12 +34,9 @@ RUN apt-get update \
 CMD ["python"]
 
 # ===== Stage 2: production =====
-FROM ghcr.io/astral-sh/uv:$UV_VERSION AS prod
+FROM base AS prod
 
 WORKDIR /app
-
-ENV UV_COMPILE_BYTECODE=1
-ENV UV_LINK_MODE=copy
 
 RUN --mount=type=cache,target=/root/.cache/uv \
   --mount=type=bind,source=uv.lock,target=uv.lock \
@@ -50,12 +49,17 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 ENV PATH="/app/.venv/bin:$PATH"
 
+# Run as a non-root user; /app stays root-owned (read-only for the app)
+RUN groupadd --system app \
+  && useradd --system --gid app --home-dir /app --no-create-home app
+USER app
+
 ENTRYPOINT []
 
 CMD ["python", "--version"]
 
 # ===== Stage 3: devcontainer =====
-FROM mcr.microsoft.com/vscode/devcontainers/base:$DEBIAN_VERSION AS devcontainer
+FROM mcr.microsoft.com/vscode/devcontainers/base:bookworm@sha256:bb7b81b6e5be17b5267f92f4ffda534fea37dab1df97b5e86c1f9b91da5c0b5d AS devcontainer
 
 ENV UV_COMPILE_BYTECODE=1
 ENV UV_LINK_MODE=copy
