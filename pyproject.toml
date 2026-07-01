@@ -31,6 +31,8 @@ test_cov = { cmd = "pytest --cov=myapp --cov-report=html --cov-report=term", hel
 addopts = "--import-mode=importlib -ra --strict-markers"
 testpaths = ["myapp"]
 python_files = ["test_*.py", "*_test.py"]
+# pytest-asyncio: async tests need an explicit @pytest.mark.asyncio marker
+asyncio_mode = "strict"
 
 [tool.coverage.run]
 source = ["myapp"]

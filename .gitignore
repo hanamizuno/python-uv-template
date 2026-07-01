@@ -6,6 +6,11 @@ dist/
 wheels/
 *.egg-info
 
+# Tool caches
+# (ruff and uv also drop their own .gitignore inside these, but be explicit)
+.ruff_cache/
+.uv-cache/
+
 # Unit test / coverage reports
 htmlcov/
 .tox/

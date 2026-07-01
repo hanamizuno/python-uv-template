@@ -1,9 +1,9 @@
 {
     "python.testing.pytestEnabled": true,
     "editor.formatOnSave": true,
-    "flake8.enabled": false,
     "[python]": {
         "editor.codeActionsOnSave": {
+            "source.fixAll.ruff": "explicit",
             "source.organizeImports": "explicit"
         },
         "editor.defaultFormatter": "charliermarsh.ruff"
