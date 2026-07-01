@@ -20,13 +20,14 @@ This template targets **non-distributed Python applications** (services, interna
     *   [`pytest`](https://docs.pytest.org/) for testing (including coverage reports).
     *   [`taskipy`](https://github.com/taskipy/taskipy) for managing project tasks.
 *   **CI/CD:** Includes GitHub Actions workflows (`.github/workflows/`) for automated linting and testing on code pushes.
+*   **Shared Knowledge Base:** `docs/knowledge/` is an [OKF](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md) bundle — a plain-Markdown knowledge base (ADRs, architecture notes, conventions, runbooks, research) that both humans and AI agents read and write. Ships as a labeled-sample skeleton; start at [`docs/knowledge/index.md`](docs/knowledge/index.md).
 
 ## Security
 
 This project implements supply chain attack protections.
 cf. https://zenn.dev/dajiaji/articles/47164ff27d2123
 
-- **Lockfile Integrity**: CI uses `uv sync --frozen` to detect lockfile tampering
+- **Lockfile Integrity**: CI uses `uv sync --locked`, which fails when `uv.lock` is missing, tampered with, or out of sync with `pyproject.toml`
 - **Minimum Privileges**: Workflows use `permissions: {}` at top level
 - **SHA Pinning**: All GitHub Actions are pinned to commit SHAs
 - **Dependabot Cooldown**: 7-day delay before accepting new package versions
@@ -38,18 +39,25 @@ cf. https://zenn.dev/dajiaji/articles/47164ff27d2123
 
 ```
 .
-├── .claude/                    # Claude Code shared settings (committed)
 ├── .devcontainer/              # Dev Container config (also runs the AI agent toolchain via Features)
-│   ├── codex-config.toml        # Initial Codex CLI config copied into the persisted ~/.codex volume
+│   ├── codex-config.toml       # Initial Codex CLI config copied into the persisted ~/.codex volume
 │   ├── devcontainer.json
-│   └── post-create.sh
+│   ├── initialize.sh           # Host-side hook: stages host git/Claude config for the container
+│   ├── post-create.sh
+│   ├── post-start.sh
+│   └── README.md               # AI agent toolchain, auth, isolation modes, PAT setup
 ├── .dockerignore
 ├── .editorconfig
 ├── .github/                    # GitHub-specific files
+│   ├── copilot-instructions.md # Pointer to AGENTS.md for GitHub Copilot
 │   ├── dependabot.yml          # Dependabot configuration
-│   ├── ISSUE_TEMPLATE/
+│   ├── ISSUE_TEMPLATE/         # Issue forms (bug, feature, task)
+│   ├── labels.yml              # Repository label definitions (synced by CI)
 │   ├── PULL_REQUEST_TEMPLATE.md
+│   ├── scripts/
+│   │   └── sync-labels.sh
 │   └── workflows/              # GitHub Actions CI workflows
+│       ├── labels.yml          # Label sync
 │       ├── lint.yml
 │       ├── lint_docker.yml
 │       ├── lint_gha.yml
@@ -63,11 +71,12 @@ cf. https://zenn.dev/dajiaji/articles/47164ff27d2123
 ├── AGENTS.md                   # Project guidelines for AI agents and humans
 ├── CLAUDE.md                   # Pointer to AGENTS.md for Claude Code
 ├── Dockerfile                  # Defines container images (dev, prod, devcontainer)
+├── LICENSE
 ├── README.md                   # This file
 ├── compose.dev.yml             # Docker Compose configuration for development
 ├── compose.yml                 # Docker Compose configuration for production
-├── docs/                       # Documentation and AI agent related files
-│   └── agents/                 # Stores execution plans for development tasks (e.g., *.md)
+├── docs/
+│   └── knowledge/              # Shared knowledge base (OKF bundle): ADRs, conventions, runbooks, ...
 ├── myapp/                      # Placeholder application package — rename and replace
 │   ├── __init__.py
 │   ├── main.py                 # Sample application code
@@ -76,6 +85,17 @@ cf. https://zenn.dev/dajiaji/articles/47164ff27d2123
 ├── pyproject.toml              # Project metadata and tool config (uv, ruff, pyright, pytest, taskipy)
 └── uv.lock                     # Pinned versions of dependencies
 ```
+
+## Adopting This Template
+
+After creating a repository from this template:
+
+1. Rename the `myapp/` package directory to your project's name, then update every reference to it:
+    - `pyproject.toml`: `[project] name` and `description`, `--cov=myapp` in the `test_cov` task, `testpaths` under `[tool.pytest.ini_options]`, and `source` under `[tool.coverage.run]`
+    - `myapp/tests/main_test.py`: the `from myapp.main import hello` import
+2. Fill in the `LICENSE` placeholders (`[yyyy]`, `[name of copyright owner]`) — or replace the license entirely.
+3. Replace the sample documents in `docs/knowledge/` with real project knowledge (each sample carries a "replace me" banner).
+4. Run `uv sync && uv run task lint && uv run task test` to confirm the renamed project is healthy.
 
 ## Getting Started
 

@@ -3,7 +3,7 @@
 ## Project Structure & Module Organization
 - Source: top-level package (placeholder: `myapp/`, e.g., `myapp/main.py`). Rename for your project.
 - Tests: co-located under each package's `tests/` directory with `*_test.py` files (e.g., `myapp/tests/main_test.py`). `tests/` directories intentionally have no `__init__.py` (pytest `--import-mode=importlib`).
-- Docs & plans: `docs/` (e.g., `docs/agents/*.md`).
+- Docs & shared knowledge: `docs/knowledge/` — an OKF bundle (ADRs, architecture notes, conventions, runbooks, research) that both humans and AI agents read and write. Start at `docs/knowledge/index.md`; record decisions and rationale there instead of leaving them in chat logs.
 - Tooling: `pyproject.toml` manages deps and tasks; `uv.lock` pins versions.
 - Containers: `Dockerfile` (multi-stage: `dev`, `prod`, `devcontainer`), `compose.dev.yml` (dev), `compose.yml` (prod). The Dev Container (`.devcontainer/devcontainer.json`) is also where AI agent CLIs (Claude Code, Codex, GitHub CLI) are layered in via Dev Container Features and post-create hooks; it also inherits host config — global gitignore, git identity (user.name/email), and Claude Code settings/statusline — staged by `.devcontainer/initialize.sh` and seeded by `.devcontainer/post-start.sh`.
 
@@ -24,7 +24,7 @@
 - Lint/format: Ruff is the single source of truth (`task lint`, `task format`).
 - Docstrings: Google style (configured via Ruff/pydocstyle).
 - Naming: modules/packages `snake_case`; classes `PascalCase`; functions/vars `snake_case`.
-- Keep public APIs small; prefer pure functions in `src/` and minimal side effects.
+- Keep public APIs small; prefer pure functions and minimal side effects.
 
 ## Testing Guidelines
 - Framework: Pytest with simple `assert` style.

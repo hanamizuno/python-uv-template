@@ -1,1 +1,22 @@
+# Virtual environments (a host venv must never clobber the image-built one)
 .venv
+
+# VCS
+.git
+
+# Python bytecode and tool caches
+__pycache__/
+*.py[oc]
+.pytest_cache/
+.ruff_cache/
+.uv-cache/
+
+# Test / coverage artifacts
+htmlcov/
+.coverage
+.coverage.*
+
+# Local editor/agent state and host config staged for the devcontainer
+.claude/
+.devcontainer/
+.vscode/

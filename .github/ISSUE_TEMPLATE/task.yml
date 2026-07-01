@@ -1,0 +1,24 @@
+name: Task
+description: Task without coding
+type: Task
+body:
+  - type: textarea
+    id: purpose
+    attributes:
+      label: Purpose
+    validations:
+      required: true
+  - type: textarea
+    id: reference
+    attributes:
+      label: Reference
+    validations:
+      required: false
+  - type: textarea
+    id: tasks
+    attributes:
+      label: Tasks
+      value: |
+        - [ ] task
+    validations:
+      required: false

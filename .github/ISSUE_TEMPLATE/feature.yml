@@ -1,0 +1,30 @@
+name: Feature
+description: Suggest a feature
+type: Feature
+body:
+  - type: textarea
+    id: purpose
+    attributes:
+      label: Purpose
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggestion
+    validations:
+      required: true
+  - type: textarea
+    id: reference
+    attributes:
+      label: Reference
+    validations:
+      required: false
+  - type: textarea
+    id: tasks
+    attributes:
+      label: Tasks
+      value: |
+        - [ ] task
+    validations:
+      required: false

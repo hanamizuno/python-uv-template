@@ -7,3 +7,5 @@ services:
     command: python --version
     volumes:
       - .:/workspace:cached
+      # Anonymous volume so the bind mount above does not shadow the image-built venv
+      - /workspace/.venv
