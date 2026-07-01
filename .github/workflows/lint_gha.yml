@@ -10,6 +10,12 @@ on:
     paths:
       - ".github/workflows/**"
 
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   actionlint:
     # cf. https://github.com/rhysd/actionlint/blob/v1.7.7/docs/usage.md#use-actionlint-on-github-actions
@@ -38,4 +44,5 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
       - name: Run zizmor
-        run: uvx zizmor .
+        # Pinned for reproducible runs; bump manually
+        run: uvx zizmor@1.26.1 .
