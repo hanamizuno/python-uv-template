@@ -11,10 +11,14 @@ FROM base AS dev
 
 WORKDIR /workspace
 
+# --no-install-project: only uv.lock / pyproject.toml are mounted in this layer, so
+# building the project itself fails (missing README.md / sources) once a derived
+# project becomes a package (`package = true`). The project is installed by the
+# second uv sync below, after COPY.
 RUN --mount=type=cache,target=/root/.cache/uv \
   --mount=type=bind,source=uv.lock,target=uv.lock \
   --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-  uv sync --frozen
+  uv sync --frozen --no-install-project
 
 COPY . /workspace
 RUN --mount=type=cache,target=/root/.cache/uv \
