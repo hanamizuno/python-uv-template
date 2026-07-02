@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# .venv and the uv cache are named volumes that mask the host bind mount
+# (platform-specific binaries must not be shared between host and container).
+# Named volumes are created root-owned on first use, so fix ownership first
+# (a no-op on subsequent creates).
+sudo chown vscode:vscode /workspace/.venv "$HOME/.cache/uv"
+
 uv sync --frozen
 
 # No sudo: npm is nvm-managed (not on sudo's secure_path) and the nvm tree is

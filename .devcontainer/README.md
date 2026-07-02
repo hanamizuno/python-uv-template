@@ -134,6 +134,15 @@ When Claude Code runs with `--dangerously-skip-permissions`, it inherits whateve
 - The token sits in `~/.config/gh/hosts.yml` inside the volume. Anyone with shell access in the container can read it, so treat compromise of the container as compromise of the token's scope.
 - Rotate by repeating step 2 + 3 — you do not need to recreate the volume.
 
+## .venv and uv cache isolation
+
+`.venv` contains platform-specific binaries (the CPython interpreter, native wheels), so sharing it between the host (e.g. macOS) and the container (Linux) forces a reinstall on every switch. This template therefore:
+
+- **`.venv`** — a named volume (`venv-${devcontainerId}`) masks the host's `.venv` on the bind mount. The host keeps its own venv untouched; the container keeps a Linux venv inside the volume. Neither side needs reinstalling when you switch.
+- **uv cache** — a named volume (`uv-cache-${devcontainerId}`) is mounted at `~/.cache/uv` (uv's default cache location), so downloaded wheels survive container rebuilds. `UV_LINK_MODE=copy` is already set in the Dockerfile, so the volume boundary simply means copies instead of hardlinks.
+
+To redo the environment, run `rm -rf .venv && uv sync --frozen` inside the container (the host is unaffected). For a completely fresh start, remove the volumes with `docker volume rm` and rebuild.
+
 ## Notes
 
 - Pulling Feature updates: `devcontainer up --workspace-folder . --remove-existing-container` (or VS Code → "Rebuild Container").
