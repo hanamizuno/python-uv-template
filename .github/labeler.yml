@@ -1,0 +1,26 @@
+# Configuration for actions/labeler (run by .github/workflows/label_pr.yml).
+# Labels PRs that modify the development harness (agent instructions, CI,
+# containers, tooling config) rather than application code.
+#
+# Note: the labeler's `dot` option defaults to true, so globs match
+# dot-directories like .github/ and .devcontainer/ without special handling.
+# Deliberately excluded: .python-version, uv.lock (routine dependency churn).
+
+meta:
+  - changed-files:
+      - any-glob-to-any-file:
+          # Agent / contributor instructions
+          - "AGENTS.md"
+          - "CLAUDE.md"
+          # GitHub config (workflows, templates, copilot-instructions.md, this file)
+          - ".github/**"
+          # Containers
+          - "Dockerfile"
+          - ".dockerignore"
+          - "compose.yml"
+          - "compose.dev.yml"
+          - ".devcontainer/**"
+          # Tooling / editor config (ruff, pyright, pytest, taskipy live in pyproject.toml)
+          - "pyproject.toml"
+          - ".editorconfig"
+          - ".vscode/**"

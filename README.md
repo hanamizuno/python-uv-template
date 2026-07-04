@@ -52,11 +52,13 @@ cf. https://zenn.dev/dajiaji/articles/47164ff27d2123
 │   ├── copilot-instructions.md # Pointer to AGENTS.md for GitHub Copilot
 │   ├── dependabot.yml          # Dependabot configuration
 │   ├── ISSUE_TEMPLATE/         # Issue forms (bug, feature, task)
+│   ├── labeler.yml             # Path-based PR labeling config (used by label_pr.yml)
 │   ├── labels.yml              # Repository label definitions (synced by CI)
 │   ├── PULL_REQUEST_TEMPLATE.md
 │   ├── scripts/
 │   │   └── sync-labels.sh
 │   └── workflows/              # GitHub Actions CI workflows
+│       ├── label_pr.yml        # PR auto-labeling (actions/labeler)
 │       ├── labels.yml          # Label sync
 │       ├── lint.yml
 │       ├── lint_docker.yml
