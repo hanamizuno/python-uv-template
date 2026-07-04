@@ -1,0 +1,32 @@
+name: Label PRs
+
+on:
+  pull_request:
+    branches: [main]
+    # Default types, made explicit. `edited` is deliberately excluded:
+    # title/body edits don't change the file set.
+    types: [opened, synchronize, reopened]
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  labeler:
+    # GITHUB_TOKEN is read-only on PRs from forks, so labeling would fail with 403.
+    # We use `pull_request` (not `pull_request_target`, flagged by zizmor as a
+    # dangerous trigger) and accept that fork PRs go unlabeled.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Apply path-based labels
+        # No checkout needed: labeler reads .github/labeler.yml via the API
+        uses: actions/labeler@f27b608878404679385c85cfa523b85ccb86e213 # v6.1.0
+        with:
+          sync-labels: true

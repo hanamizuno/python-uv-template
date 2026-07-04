@@ -31,3 +31,9 @@
 - name: "wontfix"
   color: "ffffff"
   description: "This will not be worked on"
+
+# --- Project-specific labels (beyond GitHub defaults) ---
+
+- name: "meta"
+  color: "6e7781"
+  description: "Changes to the development harness (CI, containers, agent instructions, tooling config)"
