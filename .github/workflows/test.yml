@@ -64,7 +64,7 @@ jobs:
             const allLines = process.env.COVERAGE_REPORT.split(";")
             const divider_index = allLines.findIndex(line => line.includes("coverage: platform"))
             const reportLines = allLines.slice(divider_index + 1, -5).map(line => line.split(/\s+/)).filter(line => line.length >= 4)
-            reportLines.splice(1, 0, ["----", "----", "----", "----"])
+            reportLines.splice(1, 0, reportLines[0].map(() => "----"))
             const reportTable = reportLines.map(line => `|${line.join("|")}|`).join("\n")
 
             const runURL = `${context.payload.repository.html_url}/actions/runs/${context.runId}`
