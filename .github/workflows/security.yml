@@ -46,6 +46,8 @@ jobs:
           format: "sarif"
           output: "trivy-results.sarif"
 
+      # Requires Code scanning: free on public repos; private repos need GitHub
+      # Code Security. If private, see "Security" in README.md for the alternative.
       - name: Upload Trivy scan results to GitHub Security tab
         if: github.event_name != 'pull_request'
         uses: github/codeql-action/upload-sarif@8aad20d150bbac5944a9f9d289da16a4b0d87c1e # v4.36.2

@@ -31,9 +31,18 @@ cf. https://zenn.dev/dajiaji/articles/47164ff27d2123
 - **Minimum Privileges**: Workflows use `permissions: {}` at top level
 - **SHA Pinning**: All GitHub Actions are pinned to commit SHAs
 - **Dependabot Cooldown**: 7-day delay before accepting new package versions
-- **Vulnerability Scanning**: Trivy scans dependencies on every PR (results in GitHub Security tab)
+- **Vulnerability Scanning**: Trivy scans dependencies — PRs fail on CRITICAL/HIGH findings; `push`/`schedule` runs upload SARIF results to the GitHub Security tab
 - **SBOM Generation**: CycloneDX SBOM generated on dependency changes
 - **Workflow Auditing**: zizmor checks for workflow security issues
+
+> [!NOTE]
+> **Using this template in a private repository?** The SARIF upload to the Security tab requires Code scanning, which is free for public repositories but needs [GitHub Code Security](https://docs.github.com/en/code-security) for private ones — without it, the upload step fails with `Resource not accessible by integration`. If you keep your repository private, edit `.github/workflows/security.yml` to always use the table + exit-code approach instead:
+>
+> 1. Delete the SARIF-format "Run Trivy vulnerability scanner" step and the "Upload Trivy scan results to GitHub Security tab" step.
+> 2. Remove the `if: github.event_name == 'pull_request'` condition from the remaining table-format step.
+> 3. Remove `security-events: write` from the job's `permissions`.
+>
+> Alternatively, enable GitHub Code Security on the repository to keep the Security tab integration.
 
 ## Directory Structure
 
@@ -97,7 +106,8 @@ After creating a repository from this template:
     - `myapp/tests/main_test.py`: the `from myapp.main import hello` import
 2. Fill in the `LICENSE` placeholders (`[yyyy]`, `[name of copyright owner]`) — or replace the license entirely.
 3. Replace the sample documents in `docs/knowledge/` with real project knowledge (each sample carries a "replace me" banner).
-4. Run `uv sync && uv run task lint && uv run task test` to confirm the renamed project is healthy.
+4. If your repository is private, adjust `.github/workflows/security.yml` as described in [Security](#security) (the Security-tab upload requires GitHub Code Security on private repositories).
+5. Run `uv sync && uv run task lint && uv run task test` to confirm the renamed project is healthy.
 
 ## Getting Started
 
