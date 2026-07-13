@@ -1,4 +1,4 @@
-name: Test and Coverage
+name: CI
 
 on:
   push:
@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  test:
+  check:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -38,6 +38,12 @@ jobs:
         # --locked also fails when uv.lock is out of sync with pyproject.toml
         run: uv sync --locked
 
+      - name: Run ruff linter
+        run: uv run task lint:ruff
+
+      - name: Run pyright type checker
+        run: uv run task lint:pyright
+
       - name: Run tests with coverage
         id: coverage
         run: |
@@ -46,10 +52,13 @@ jobs:
           echo "report=${report}" >> "$GITHUB_OUTPUT"
 
       - name: Upload coverage report
+        # Only PRs consume the report (via the PR comment's download link)
+        if: github.event_name == 'pull_request'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: coverage-report
           path: htmlcov/
+          retention-days: 14
 
       - name: Add comment to PR
         # GITHUB_TOKEN is read-only on PRs from forks, so commenting would fail with 403
