@@ -1,0 +1,31 @@
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff check (staged)
+        # --force-exclude keeps ruff's exclude config effective even when
+        # filenames are passed explicitly.
+        entry: uv run ruff check --force-exclude
+        language: system
+        types_or: [python, pyi]
+        pass_filenames: true
+      - id: ruff-format
+        name: ruff format --check (staged)
+        entry: uv run ruff format --check --force-exclude
+        language: system
+        types_or: [python, pyi]
+        pass_filenames: true
+      - id: pyright
+        name: pyright (project)
+        # Type checking needs the whole project, not just staged files
+        entry: uv run pyright
+        language: system
+        pass_filenames: false
+        files: \.pyi?$
+      - id: uv-lock-check
+        name: uv lock --check
+        # Catch at commit time the same desync that `uv sync --locked` fails on in CI
+        entry: uv lock --check
+        language: system
+        pass_filenames: false
+        files: ^(pyproject\.toml|uv\.lock)$

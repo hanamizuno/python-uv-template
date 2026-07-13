@@ -9,6 +9,12 @@ sudo chown vscode:vscode /workspace/.venv "$HOME/.cache/uv"
 
 uv sync --frozen
 
+# Install prek (pre-commit hook runner) and register the git pre-commit hook.
+# uv tool install is idempotent; invoke via the tool bin dir (~/.local/bin on
+# Linux) in case it is not on PATH yet in this shell.
+uv tool install prek
+"$HOME/.local/bin/prek" install
+
 # No sudo: npm is nvm-managed (not on sudo's secure_path) and the nvm tree is
 # vscode-writable, so a plain global install works.
 if ! command -v codex >/dev/null 2>&1; then
