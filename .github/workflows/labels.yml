@@ -1,23 +1,16 @@
 name: Sync Labels
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - ".github/labels.yml"
-      - ".github/scripts/sync-labels.sh"
-      - ".github/workflows/labels.yml"
-  pull_request:
-    branches: [main]
-    paths:
-      - ".github/labels.yml"
-      - ".github/scripts/sync-labels.sh"
-      - ".github/workflows/labels.yml"
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Preview changes without applying them"
+        type: boolean
+        default: false
 
 permissions: {}
 
-# Serialize runs so concurrent label mutations cannot race; the newest queued run wins
+# Serialize manual runs so concurrent label mutations cannot race
 concurrency:
   group: ${{ github.workflow }}
 
@@ -35,5 +28,5 @@ jobs:
       - name: Sync labels
         env:
           GH_TOKEN: ${{ github.token }}
-          DRY_RUN: ${{ github.event_name == 'pull_request' && '1' || '0' }}
+          DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
         run: bash .github/scripts/sync-labels.sh .github/labels.yml
