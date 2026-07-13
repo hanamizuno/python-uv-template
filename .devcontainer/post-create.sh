@@ -3,9 +3,10 @@ set -euo pipefail
 
 # .venv and the uv cache are named volumes that mask the host bind mount
 # (platform-specific binaries must not be shared between host and container).
-# Named volumes are created root-owned on first use, so fix ownership first
-# (a no-op on subsequent creates).
-sudo chown vscode:vscode /workspace/.venv "$HOME/.cache/uv"
+# Named volumes are created root-owned on first use — including the parent
+# ~/.cache that Docker creates for the mountpoint, which prek also needs for
+# its own cache — so fix ownership first (a no-op on subsequent creates).
+sudo chown vscode:vscode /workspace/.venv "$HOME/.cache" "$HOME/.cache/uv"
 
 uv sync --frozen
 
