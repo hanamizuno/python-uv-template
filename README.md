@@ -19,7 +19,8 @@ This template targets **non-distributed Python applications** (services, interna
     *   [`pyright`](https://microsoft.github.io/pyright/) for static type checking.
     *   [`pytest`](https://docs.pytest.org/) for testing (including coverage reports).
     *   [`taskipy`](https://github.com/taskipy/taskipy) for managing project tasks.
-*   **CI/CD:** Includes GitHub Actions workflows (`.github/workflows/`) for automated linting and testing on code pushes.
+*   **CI/CD:** GitHub Actions workflows (`.github/workflows/`) — a consolidated `ci.yml` runs linting, type checking, and tests (with a coverage PR comment) in a single job; companion workflows cover security scanning, SBOM generation, Dockerfile/workflow linting, and labeling.
+*   **Pre-commit Hooks:** `.pre-commit-config.yaml` runs ruff, pyright, and a lockfile check at commit time via [prek](https://github.com/j178/prek) — set up automatically in the Dev Container, optional elsewhere.
 *   **Shared Knowledge Base:** `docs/knowledge/` is an [OKF](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md) bundle — a plain-Markdown knowledge base (ADRs, architecture notes, conventions, runbooks, research) that both humans and AI agents read and write. Ships as a labeled-sample skeleton; start at [`docs/knowledge/index.md`](docs/knowledge/index.md).
 
 ## Security
@@ -31,7 +32,7 @@ cf. https://zenn.dev/dajiaji/articles/47164ff27d2123
 - **Minimum Privileges**: Workflows use `permissions: {}` at top level
 - **SHA Pinning**: All GitHub Actions are pinned to commit SHAs
 - **Dependabot Cooldown**: 7-day delay before accepting new package versions
-- **Vulnerability Scanning**: Trivy scans dependencies — PRs fail on CRITICAL/HIGH findings; `push`/`schedule` runs upload SARIF results to the GitHub Security tab
+- **Vulnerability Scanning**: Trivy scans dependencies on dependency/Dockerfile/workflow changes and weekly — PRs fail on CRITICAL/HIGH findings; `push`/`schedule` runs upload SARIF results to the GitHub Security tab
 - **SBOM Generation**: CycloneDX SBOM generated on dependency changes
 - **Workflow Auditing**: zizmor checks for workflow security issues
 
@@ -62,20 +63,20 @@ cf. https://zenn.dev/dajiaji/articles/47164ff27d2123
 │   ├── dependabot.yml          # Dependabot configuration
 │   ├── ISSUE_TEMPLATE/         # Issue forms (bug, feature, task)
 │   ├── labeler.yml             # Path-based PR labeling config (used by label_pr.yml)
-│   ├── labels.yml              # Repository label definitions (synced by CI)
+│   ├── labels.yml              # Repository label definitions (synced via the manual Sync Labels workflow)
 │   ├── PULL_REQUEST_TEMPLATE.md
 │   ├── scripts/
 │   │   └── sync-labels.sh
 │   └── workflows/              # GitHub Actions CI workflows
+│       ├── ci.yml              # Lint + type check + tests (single job)
 │       ├── label_pr.yml        # PR auto-labeling (actions/labeler)
-│       ├── labels.yml          # Label sync
-│       ├── lint.yml
+│       ├── labels.yml          # Label sync (manual: workflow_dispatch)
 │       ├── lint_docker.yml
 │       ├── lint_gha.yml
 │       ├── sbom.yml            # SBOM generation
-│       ├── security.yml        # Vulnerability scanning
-│       └── test.yml
+│       └── security.yml        # Vulnerability scanning
 ├── .gitignore
+├── .pre-commit-config.yaml     # Pre-commit hooks (run via prek)
 ├── .python-version             # Specifies Python version (primarily for uv/tooling)
 ├── .vscode/                    # VSCode-specific files
 │   └── settings.json
@@ -107,7 +108,8 @@ After creating a repository from this template:
 2. Fill in the `LICENSE` placeholders (`[yyyy]`, `[name of copyright owner]`) — or replace the license entirely.
 3. Replace the sample documents in `docs/knowledge/` with real project knowledge (each sample carries a "replace me" banner).
 4. If your repository is private, adjust `.github/workflows/security.yml` as described in [Security](#security) (the Security-tab upload requires GitHub Code Security on private repositories).
-5. Run `uv sync && uv run task lint && uv run task test` to confirm the renamed project is healthy.
+5. Run the **Sync Labels** workflow once (Actions → Sync Labels → Run workflow) to create the project labels (e.g. `meta`, used by PR auto-labeling) — label sync is manual-only.
+6. Run `uv sync && uv run task lint && uv run task test` to confirm the renamed project is healthy.
 
 ## Getting Started
 
@@ -162,6 +164,16 @@ After creating a repository from this template:
     ```bash
     uv run task test
     ```
+
+### Pre-commit Hooks (optional outside the Dev Container)
+
+The Dev Container registers the git pre-commit hooks automatically (see `.devcontainer/post-create.sh`). If you work outside the container, [install prek](https://github.com/j178/prek?tab=readme-ov-file#installation) and run:
+
+```bash
+prek install
+```
+
+The hooks (defined in `.pre-commit-config.yaml`) run `ruff check`, `ruff format --check`, `pyright`, and `uv lock --check` on each commit.
 
 ### Available Tasks (using Taskipy)
 
