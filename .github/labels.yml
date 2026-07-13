@@ -1,5 +1,6 @@
 # Source of truth for repository labels.
-# Synced by .github/workflows/labels.yml on push to main.
+# Synced by manually running the "Sync Labels" workflow
+# (Actions -> Sync Labels -> Run workflow).
 # Labels not listed here are NOT deleted (add / update only).
 #
 # Initial set matches GitHub's default labels for new repositories.

@@ -22,5 +22,6 @@ meta:
           - ".devcontainer/**"
           # Tooling / editor config (ruff, pyright, pytest, taskipy live in pyproject.toml)
           - "pyproject.toml"
+          - ".pre-commit-config.yaml"
           - ".editorconfig"
           - ".vscode/**"

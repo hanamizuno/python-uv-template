@@ -1,12 +1,25 @@
 name: Security Scan
 
+# push/PR runs are limited to the files Trivy actually scans; the weekly
+# schedule still covers everything else (e.g. secrets committed elsewhere).
 on:
   push:
     branches: [main]
+    paths:
+      - "uv.lock"
+      - "pyproject.toml"
+      - "Dockerfile"
+      - ".github/workflows/security.yml"
   pull_request:
     branches: [main]
+    paths:
+      - "uv.lock"
+      - "pyproject.toml"
+      - "Dockerfile"
+      - ".github/workflows/security.yml"
   schedule:
     - cron: "0 0 * * 1" # Every Monday at 00:00 UTC
+  workflow_dispatch:
 
 permissions: {}
 
