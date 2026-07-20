@@ -171,10 +171,10 @@ Agents here run unattended (`approval_policy = "never"`, `--dangerously-skip-per
 2. Run commands that need secrets through `pass-cli run`:
 
    ```bash
-   pass-cli run --env-file .env -- <cmd>
+   PROTON_PASS_AGENT_REASON="<why you need it>" pass-cli run --env-file .env -- <cmd>
    ```
 
-   Values are resolved at spawn time, injected only into `<cmd>`'s environment, and masked as `<concealed by Proton Pass>` in stdout/stderr.
+   Values are resolved at spawn time, injected only into `<cmd>`'s environment, and masked as `<concealed by Proton Pass>` in stdout/stderr. `PROTON_PASS_AGENT_REASON` is required for item access on PAT (agent) sessions — `pass-cli run` fails with an error without it — and the value is recorded in Proton's audit log.
 
 **How the login gets there:** on the host, `initialize.sh` stages a Proton Pass personal access token (PAT) from the macOS Keychain — the per-project item `proton-pass-agent-pat-<project dir name>` when registered, else the shared `proton-pass-agent-pat` — as the git-ignored `.devcontainer/host-proton-pat` (0600) — the same host-* staging idiom as the config inheritance above, so no extra mount is involved; `post-start.sh` logs pass-cli in (the session persists in the `proton-pass` compose volume, so this happens only on first start and after PAT rotation) and then deletes the stage. No PAT in Keychain — or no `security` at all (Linux/Windows hosts) — means every step is skipped and the container works normally, just without pass-cli secrets.
 

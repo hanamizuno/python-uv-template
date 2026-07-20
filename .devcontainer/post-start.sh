@@ -74,10 +74,14 @@ if command -v pass-cli >/dev/null 2>&1; then
   # vault(s) this PAT can see — per-project vaults keep their own repo-scoped
   # GitHub PAT under that fixed item name. Best-effort: skipped when no such
   # item exists or gh is already authenticated.
+  # PROTON_PASS_AGENT_REASON is required for item access on PAT (agent)
+  # sessions — without it `pass-cli run` fails (and the failure is swallowed
+  # here). The value is recorded in Proton's audit log.
   if command -v gh >/dev/null 2>&1 && ! gh auth status >/dev/null 2>&1; then
     pass-cli vault list 2>/dev/null | sed -n 's/^- \[[^]]*\]: //p' |
       while IFS= read -r vault; do
-        GH_SEED_TOKEN="pass://$vault/github-fine-grained/token" \
+        PROTON_PASS_AGENT_REASON="Seed gh auth from github-fine-grained (devcontainer post-start)" \
+          GH_SEED_TOKEN="pass://$vault/github-fine-grained/token" \
           pass-cli run -- sh -c 'printf %s "$GH_SEED_TOKEN" | gh auth login --with-token' \
           >/dev/null 2>&1 || true
         gh auth status >/dev/null 2>&1 && break
