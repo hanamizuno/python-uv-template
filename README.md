@@ -51,6 +51,7 @@ cf. https://zenn.dev/dajiaji/articles/47164ff27d2123
 .
 ├── .devcontainer/              # Dev Container config (also runs the AI agent toolchain via Features)
 │   ├── codex-config.toml       # Initial Codex CLI config copied into the persisted ~/.codex volume
+│   ├── compose.yaml            # Devcontainer compose definition (merged with git-ignored compose.local.yaml)
 │   ├── devcontainer.json
 │   ├── initialize.sh           # Host-side hook: stages host git/Claude config for the container
 │   ├── post-create.sh

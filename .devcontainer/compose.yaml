@@ -1,0 +1,45 @@
+# Compose definition for the devcontainer only. devcontainer.json merges this
+# with compose.local.yaml (git-ignored local override; initialize.sh generates
+# a no-op stub when absent). NOT related to the root compose.yml (prod) or
+# compose.dev.yml (ad-hoc dev) — do not mix them up.
+# The compose project directory is this file's directory (.devcontainer/), so
+# relative paths below are resolved from .devcontainer/.
+name: python-uv-template-devcontainer
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: devcontainer
+    # Compose-based devcontainers ignore overrideCommand, so keep the container
+    # alive ourselves.
+    command: sleep infinity
+    user: vscode
+    volumes:
+      - ..:/workspace:cached
+      - claude-config:/home/vscode/.claude
+      - codex-config:/home/vscode/.codex
+      - gh-config:/home/vscode/.config/gh
+      - agent-history:/commandhistory
+      # Mask the host's .venv and persist uv's download cache: .venv holds
+      # platform-specific binaries, so sharing it with the host forces reinstalls
+      - venv:/workspace/.venv
+      - uv-cache:/home/vscode/.cache/uv
+      # Proton Pass: session volume so pass-cli login survives rebuilds. The PAT
+      # itself arrives as the git-ignored .devcontainer/host-proton-pat stage
+      # (through the workspace mount; deleted by post-start.sh) — never via
+      # environment/remoteEnv (persists in container metadata / docker inspect)
+      # and never as an extra single-file bind mount (breaks startup when
+      # initializeCommand is skipped, e.g. Windows without Git Bash).
+      - proton-pass:/home/vscode/.local/state/proton-pass
+    environment:
+      HISTFILE: /commandhistory/.bash_history
+      PROMPT_COMMAND: history -a
+volumes:
+  claude-config:
+  codex-config:
+  gh-config:
+  agent-history:
+  venv:
+  uv-cache:
+  proton-pass:

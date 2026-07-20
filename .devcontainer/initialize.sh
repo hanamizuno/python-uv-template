@@ -5,6 +5,13 @@
 # startup: every path exits 0.
 set -u
 
+# --- compose.local.yaml stub --------------------------------------------------
+# compose.local.yaml is listed in devcontainer.json's dockerComposeFile as the
+# git-ignored local override; docker compose fails to start when it is missing,
+# so generate a no-op stub.
+COMPOSE_LOCAL=".devcontainer/compose.local.yaml"
+[ -f "$COMPOSE_LOCAL" ] || printf 'services:\n  app: {}\n' > "$COMPOSE_LOCAL"
+
 STAGE=".devcontainer/host-gitignore"
 
 resolve() {

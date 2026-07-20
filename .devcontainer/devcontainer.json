@@ -1,14 +1,16 @@
 {
   "name": "python-uv-agent",
-  "build": {
-    "dockerfile": "../Dockerfile",
-    "context": "..",
-    "target": "devcontainer"
-  },
+  // compose.local.yaml is a git-ignored local override (initialize.sh generates
+  // a no-op stub when absent). Put personal-environment diffs — extra bind
+  // mounts, networks, extra_hosts — there. Example:
+  //   services:
+  //     app:
+  //       volumes:
+  //         - ../../<dir>:/<dir>:ro
+  "dockerComposeFile": ["compose.yaml", "compose.local.yaml"],
+  "service": "app",
   "workspaceFolder": "/workspace",
-  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
   "remoteUser": "vscode",
-  "containerUser": "vscode",
   "features": {
     "ghcr.io/devcontainers/features/common-utils:2": {
       "username": "vscode",
@@ -27,32 +29,9 @@
     "ghcr.io/devcontainers/features/node",
     "ghcr.io/anthropics/devcontainer-features/claude-code"
   ],
-  "mounts": [
-    "source=claude-config-${devcontainerId},target=/home/vscode/.claude,type=volume",
-    "source=codex-config-${devcontainerId},target=/home/vscode/.codex,type=volume",
-    "source=gh-config-${devcontainerId},target=/home/vscode/.config/gh,type=volume",
-    "source=agent-history-${devcontainerId},target=/commandhistory,type=volume",
-    // Mask the host's .venv and persist uv's download cache: .venv holds
-    // platform-specific binaries, so sharing it with the host forces reinstalls
-    "source=venv-${devcontainerId},target=/workspace/.venv,type=volume",
-    "source=uv-cache-${devcontainerId},target=/home/vscode/.cache/uv,type=volume",
-    // Proton Pass: session volume so pass-cli login survives rebuilds. The PAT
-    // itself arrives as the git-ignored .devcontainer/host-proton-pat stage
-    // (through the workspace mount; deleted by post-start.sh) — never via
-    // containerEnv/remoteEnv (persists in container metadata / docker inspect)
-    // and never as an extra single-file bind mount (breaks startup when
-    // initializeCommand is skipped, e.g. Windows without Git Bash).
-    "source=proton-pass-${devcontainerId},target=/home/vscode/.local/state/proton-pass,type=volume"
-    // 追加例: ホストの特定フォルダを参照用にマウントする場合
-    // "source=${localEnv:HOME}/docs/reference,target=/mnt/reference,type=bind,readonly"
-  ],
-  "containerEnv": {
-    "HISTFILE": "/commandhistory/.bash_history",
-    "PROMPT_COMMAND": "history -a"
-  },
   "remoteEnv": {
     // Non-secret pass-cli session config; the session itself lives in the
-    // proton-pass volume above
+    // proton-pass volume (see compose.yaml)
     "PROTON_PASS_KEY_PROVIDER": "fs",
     "PROTON_PASS_SESSION_DIR": "/home/vscode/.local/state/proton-pass"
   },
