@@ -35,13 +35,26 @@
     // Mask the host's .venv and persist uv's download cache: .venv holds
     // platform-specific binaries, so sharing it with the host forces reinstalls
     "source=venv-${devcontainerId},target=/workspace/.venv,type=volume",
-    "source=uv-cache-${devcontainerId},target=/home/vscode/.cache/uv,type=volume"
+    "source=uv-cache-${devcontainerId},target=/home/vscode/.cache/uv,type=volume",
+    // Proton Pass: session volume so pass-cli login survives rebuilds. The PAT
+    // itself arrives as the git-ignored .devcontainer/host-proton-pat stage
+    // (through the workspace mount; deleted by post-start.sh) — never via
+    // containerEnv/remoteEnv (persists in container metadata / docker inspect)
+    // and never as an extra single-file bind mount (breaks startup when
+    // initializeCommand is skipped, e.g. Windows without Git Bash).
+    "source=proton-pass-${devcontainerId},target=/home/vscode/.local/state/proton-pass,type=volume"
     // 追加例: ホストの特定フォルダを参照用にマウントする場合
     // "source=${localEnv:HOME}/docs/reference,target=/mnt/reference,type=bind,readonly"
   ],
   "containerEnv": {
     "HISTFILE": "/commandhistory/.bash_history",
     "PROMPT_COMMAND": "history -a"
+  },
+  "remoteEnv": {
+    // Non-secret pass-cli session config; the session itself lives in the
+    // proton-pass volume above
+    "PROTON_PASS_KEY_PROVIDER": "fs",
+    "PROTON_PASS_SESSION_DIR": "/home/vscode/.local/state/proton-pass"
   },
   "waitFor": "postCreateCommand",
   "initializeCommand": ".devcontainer/initialize.sh",

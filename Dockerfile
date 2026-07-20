@@ -65,13 +65,30 @@ CMD ["python", "--version"]
 # ===== Stage 3: devcontainer =====
 FROM mcr.microsoft.com/vscode/devcontainers/base:bookworm@sha256:bb7b81b6e5be17b5267f92f4ffda534fea37dab1df97b5e86c1f9b91da5c0b5d AS devcontainer
 
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
 ENV UV_COMPILE_BYTECODE=1
 ENV UV_LINK_MODE=copy
 
 COPY --from=dev --chown=vscode: /usr/local/bin/uv /usr/local/bin/
 
-RUN mkdir -p /commandhistory /home/vscode/.claude /home/vscode/.codex /home/vscode/.config/gh \
-  && chown -R vscode:vscode /commandhistory /home/vscode/.claude /home/vscode/.codex /home/vscode/.config \
+# Proton Pass CLI: task secrets (GH_TOKEN, API keys) are injected per-command via
+# `pass-cli run` instead of living in ambient container env. The install script
+# needs jq. See README "Task secrets via Proton Pass (pass-cli)".
+# hadolint ignore=DL3008
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends jq \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/* \
+  && curl -fsSL https://proton.me/download/pass-cli/install.sh \
+  | PROTON_PASS_CLI_INSTALL_DIR=/usr/local/bin bash
+
+# Volume mountpoints under the home dir must pre-exist owned by vscode
+# (~/.cache/uv, ~/.local/state/proton-pass): docker creates missing mountpoint
+# paths as root, which would leave the ~/.cache and ~/.local parents root-owned
+# and break tools that write there (uv-managed Pythons, prek's cache, ...).
+RUN mkdir -p /commandhistory /home/vscode/.claude /home/vscode/.codex /home/vscode/.config/gh /home/vscode/.cache/uv /home/vscode/.local/state/proton-pass \
+  && chown -R vscode:vscode /commandhistory /home/vscode/.claude /home/vscode/.codex /home/vscode/.config /home/vscode/.cache /home/vscode/.local \
   && ln -sf /home/vscode/.claude/.claude.json /home/vscode/.claude.json \
   && chown -h vscode:vscode /home/vscode/.claude.json
 

@@ -50,13 +50,13 @@ On every container create/start, `./initialize.sh` (an `initializeCommand`, runs
 
 If a host file does not exist its step is a no-op and the container starts normally.
 
-The staged `host-*` files (`host-gitignore`, `host-gituser`, `host-claude/`) are git-ignored local artifacts containing personal config. A `git clone` never carries them, but a plain filesystem copy (`cp -r`, zip) of a checkout would — exclude them when copying this template outside git.
+The staged `host-*` files (`host-gitignore`, `host-gituser`, `host-claude/`, `host-proton-pat`) are git-ignored local artifacts containing personal config. A `git clone` never carries them, but a plain filesystem copy (`cp -r`, zip) of a checkout would — exclude them when copying this template outside git. `host-proton-pat` briefly holds a real secret between `devcontainer up` and the container's post-start (which deletes it), so treat a lingering copy as a token to rotate.
 
 > **Windows hosts:** `initializeCommand` runs a bash script on the host, so native Windows needs Git Bash/WSL on `PATH` — otherwise the sync is skipped but the container still starts.
 
 ## Operating modes
 
-- **Default (egress open)** — outbound traffic is unrestricted. Host credentials are *not* bind-mounted (Claude/Codex/`gh` auth lives in container-scoped volumes), and the host Docker socket is not exposed. The defense surface for autonomous agent runs is: non-root `vscode` user, workspace-only mount, container-scoped auth volumes. Codex is seeded with `approval_policy = "never"` and `sandbox_mode = "workspace-write"` in its container-scoped config, which lets it work without pauses while keeping writes scoped to the workspace.
+- **Default (egress open)** — outbound traffic is unrestricted. Host credentials are *not* bind-mounted (Claude/Codex/`gh` auth lives in container-scoped volumes), and the host Docker socket is not exposed. The defense surface for autonomous agent runs is: non-root `vscode` user, workspace-only mount, container-scoped auth volumes. Codex is seeded with `approval_policy = "never"` and `sandbox_mode = "workspace-write"` in its container-scoped config, which lets it work without pauses while keeping writes scoped to the workspace. Precisely because agents run unattended with network access, task secrets (API keys, tokens) are delivered per-command via `pass-cli run` instead of ambient container env — see "Task secrets via Proton Pass (pass-cli)" below.
 - **Isolated mode (optional)** — for a stricter sandbox, create a Docker network with no egress and attach the container to it:
   ```bash
   docker network create --internal agent-internal
@@ -133,6 +133,35 @@ When Claude Code runs with `--dangerously-skip-permissions`, it inherits whateve
 - Fine-grained PATs do not yet cover every `gh` subcommand — if you hit a 403 or "PAT not supported" error, fall back to a tightly-scoped classic PAT.
 - The token sits in `~/.config/gh/hosts.yml` inside the volume. Anyone with shell access in the container can read it, so treat compromise of the container as compromise of the token's scope.
 - Rotate by repeating step 2 + 3 — you do not need to recreate the volume.
+- Alternatively, `post-start.sh` seeds `gh auth` automatically from the Proton Pass item `agent-secrets/github-fine-grained/token` when the volume has no auth yet (see the next section).
+
+## Task secrets via Proton Pass (pass-cli)
+
+Agents here run unattended (`approval_policy = "never"`, `--dangerously-skip-permissions`) and can read anything in their environment, so task secrets must not sit in ambient container env — which is exactly what a `remoteEnv`/`containerEnv` passthrough would do. Instead, the [Proton Pass CLI](https://protonpass.github.io/pass-cli/) is baked into the devcontainer stage and secrets are injected per command:
+
+1. `.env` (git-ignored) holds only `pass://agent-secrets/<item>/<field>` *references* — copy `example.env` to `.env` to start. References are names, not values, so `example.env` is safe to commit; the real `.env` stays ignored as insurance against pasting an actual token into it.
+2. Run commands that need secrets through `pass-cli run`:
+
+   ```bash
+   pass-cli run --env-file .env -- <cmd>
+   ```
+
+   Values are resolved at spawn time, injected only into `<cmd>`'s environment, and masked as `<concealed by Proton Pass>` in stdout/stderr.
+
+**How the login gets there:** on the host, `initialize.sh` stages a Proton Pass personal access token (PAT) from the macOS Keychain item `proton-pass-agent-pat` as the git-ignored `.devcontainer/host-proton-pat` (0600) — the same host-* staging idiom as the config inheritance above, so no extra mount is involved; `post-start.sh` logs pass-cli in (the session persists in the `proton-pass-${devcontainerId}` volume, so this happens only on first start and after PAT rotation) and then deletes the stage. No PAT in Keychain — or no `security` at all (Linux/Windows hosts) — means every step is skipped and the container works normally, just without pass-cli secrets.
+
+**Scope model:** issue the PAT scoped to a dedicated vault (e.g. `agent-secrets`) with the `viewer` role and a short expiry. Anything in that vault is readable by the agent — treat "in the vault" as "handed to the agent", and keep the tokens themselves least-privilege (fine-grained GitHub PATs, etc.). Masking is hygiene, not a boundary: a subprocess can still write a secret to a file or send it over the network.
+
+**Host-side setup (one-time, macOS):**
+
+```bash
+read -rs PAT
+security add-generic-password -a "$USER" -s proton-pass-agent-pat \
+  -l 'Proton Pass agent PAT (devcontainer bootstrap)' -T /usr/bin/security -w "$PAT"
+unset PAT
+```
+
+`-T /usr/bin/security` pre-authorizes the read so `devcontainer up` stays unattended. Rotate by re-running with `-U` after minting a new PAT; containers re-login on their next start.
 
 ## .venv and uv cache isolation
 

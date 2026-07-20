@@ -29,6 +29,10 @@ cover/
 # Virtual environments
 .venv
 
+# Local env files (may hold real secrets); commit example.env (pass:// references) instead
+.env
+.env.local
+
 # macOS
 .DS_Store
 
@@ -36,3 +40,4 @@ cover/
 .devcontainer/host-gitignore
 .devcontainer/host-gituser
 .devcontainer/host-claude/
+.devcontainer/host-proton-pat

@@ -29,3 +29,10 @@ repos:
         language: system
         pass_filenames: false
         files: ^(pyproject\.toml|uv\.lock)$
+      - id: secretlint
+        name: secretlint (staged)
+        # No package.json here, so run via npx (packages cached after first run).
+        # Node is available on the host and in the devcontainer (node feature).
+        entry: npx --yes --package secretlint@^8.5.0 --package @secretlint/secretlint-rule-preset-recommend@^8.5.0 -- secretlint --no-color
+        language: system
+        pass_filenames: true

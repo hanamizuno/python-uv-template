@@ -66,4 +66,21 @@ if [ -n "$GIT_EMAIL" ]; then
   git config --file "$GITUSER_STAGE" user.email "$GIT_EMAIL" 2>/dev/null || rm -f "$GITUSER_STAGE"
 fi
 
+# --- Proton Pass PAT (task secrets) ------------------------------------------
+# Stage the Proton Pass personal access token from the macOS Keychain (same
+# git-ignored host-* staging idiom as above) so post-start.sh can log pass-cli
+# in inside the container; post-start.sh deletes the stage right after login.
+# No Keychain item — or no `security` at all (Linux/Windows) — means nothing is
+# staged and the container works normally, just without pass-cli secrets.
+# See README "Task secrets via Proton Pass (pass-cli)".
+PAT_STAGE=".devcontainer/host-proton-pat"
+rm -f "$PAT_STAGE"
+if command -v security >/dev/null 2>&1; then
+  umask 077
+  security find-generic-password -w -s proton-pass-agent-pat >"$PAT_STAGE" 2>/dev/null || {
+    rm -f "$PAT_STAGE"
+    echo "initialize.sh: proton-pass-agent-pat not found in Keychain; pass-cli login will be skipped" >&2
+  }
+fi
+
 exit 0

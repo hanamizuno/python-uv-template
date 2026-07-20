@@ -45,3 +45,37 @@ if [ -f .devcontainer/host-claude/settings.json ]; then
     cp .devcontainer/host-claude/settings.json "$target"
   fi
 fi
+
+# --- Proton Pass (pass-cli): task secrets ------------------------------------
+# Log pass-cli in from the PAT staged by initialize.sh as .devcontainer/
+# host-proton-pat (no stage = no PAT on this host; skip silently). The session
+# lives in a named volume, so the login runs only on first start and after a
+# PAT rotation. The stage is deleted right after — it is a regular file inside
+# the workspace mount, so the delete propagates to the host copy too.
+if command -v pass-cli >/dev/null 2>&1; then
+  export PROTON_PASS_KEY_PROVIDER="${PROTON_PASS_KEY_PROVIDER:-fs}"
+  export PROTON_PASS_SESSION_DIR="${PROTON_PASS_SESSION_DIR:-$HOME/.local/state/proton-pass}"
+  # Fix ownership of the session-volume mountpoint and its parents: docker
+  # creates missing mountpoint paths as root (also repairs volumes created
+  # before the Dockerfile pre-created these directories).
+  sudo mkdir -p "$PROTON_PASS_SESSION_DIR"
+  sudo chown vscode:vscode "$HOME/.local" "$HOME/.local/state" "$PROTON_PASS_SESSION_DIR"
+  # A set PROTON_PASS_PERSONAL_ACCESS_TOKEN makes `pass-cli login` take the PAT
+  # flow (safer than passing the token in argv via --pat). A stale local session
+  # (e.g. expired server-side) makes `login` fail with "Already authenticated",
+  # so clear it first — logout is a no-op when there is no session.
+  if ! pass-cli vault list >/dev/null 2>&1 && [ -s .devcontainer/host-proton-pat ]; then
+    pass-cli logout >/dev/null 2>&1 || true
+    PROTON_PASS_PERSONAL_ACCESS_TOKEN="$(cat .devcontainer/host-proton-pat)" \
+      pass-cli login
+  fi
+
+  # Seed gh auth from the agent vault on first start (best-effort: skipped when
+  # the vault has no github token item or gh is already authenticated).
+  if command -v gh >/dev/null 2>&1 && ! gh auth status >/dev/null 2>&1; then
+    GH_SEED_TOKEN="pass://agent-secrets/github-fine-grained/token" \
+      pass-cli run -- sh -c 'printf %s "$GH_SEED_TOKEN" | gh auth login --with-token' \
+      >/dev/null 2>&1 || true
+  fi
+fi
+rm -f .devcontainer/host-proton-pat
