@@ -133,7 +133,7 @@ When Claude Code runs with `--dangerously-skip-permissions`, it inherits whateve
 - Fine-grained PATs do not yet cover every `gh` subcommand — if you hit a 403 or "PAT not supported" error, fall back to a tightly-scoped classic PAT.
 - The token sits in `~/.config/gh/hosts.yml` inside the volume. Anyone with shell access in the container can read it, so treat compromise of the container as compromise of the token's scope.
 - Rotate by repeating step 2 + 3 — you do not need to recreate the volume.
-- Alternatively, `post-start.sh` seeds `gh auth` automatically from the Proton Pass item `agent-secrets/github-fine-grained/token` when the volume has no auth yet (see the next section).
+- Alternatively, `post-start.sh` seeds `gh auth` automatically from the `github-fine-grained` item in the agent vault when the volume has no auth yet (see the next section).
 
 ## Task secrets via Proton Pass (pass-cli)
 
@@ -148,9 +148,11 @@ Agents here run unattended (`approval_policy = "never"`, `--dangerously-skip-per
 
    Values are resolved at spawn time, injected only into `<cmd>`'s environment, and masked as `<concealed by Proton Pass>` in stdout/stderr.
 
-**How the login gets there:** on the host, `initialize.sh` stages a Proton Pass personal access token (PAT) from the macOS Keychain item `proton-pass-agent-pat` as the git-ignored `.devcontainer/host-proton-pat` (0600) — the same host-* staging idiom as the config inheritance above, so no extra mount is involved; `post-start.sh` logs pass-cli in (the session persists in the `proton-pass-${devcontainerId}` volume, so this happens only on first start and after PAT rotation) and then deletes the stage. No PAT in Keychain — or no `security` at all (Linux/Windows hosts) — means every step is skipped and the container works normally, just without pass-cli secrets.
+**How the login gets there:** on the host, `initialize.sh` stages a Proton Pass personal access token (PAT) from the macOS Keychain — the per-project item `proton-pass-agent-pat-<project dir name>` when registered, else the shared `proton-pass-agent-pat` — as the git-ignored `.devcontainer/host-proton-pat` (0600) — the same host-* staging idiom as the config inheritance above, so no extra mount is involved; `post-start.sh` logs pass-cli in (the session persists in the `proton-pass-${devcontainerId}` volume, so this happens only on first start and after PAT rotation) and then deletes the stage. No PAT in Keychain — or no `security` at all (Linux/Windows hosts) — means every step is skipped and the container works normally, just without pass-cli secrets.
 
 **Scope model:** issue the PAT scoped to a dedicated vault (e.g. `agent-secrets`) with the `viewer` role and a short expiry. Anything in that vault is readable by the agent — treat "in the vault" as "handed to the agent", and keep the tokens themselves least-privilege (fine-grained GitHub PATs, etc.). Masking is hygiene, not a boundary: a subprocess can still write a secret to a file or send it over the network.
+
+**Per-project vaults (optional):** to give this project its own blast radius, create a vault (e.g. `agents-<project>`), issue a PAT scoped to just that vault, and register it as the Keychain item `proton-pass-agent-pat-<project dir name>` — `initialize.sh` picks it up automatically and falls back to the shared item when absent, so the repo needs no config. Name the PAT after the vault so Proton's audit log identifies which project's agent accessed what. Keep the project's repo-scoped GitHub PAT in that vault under the fixed item name `github-fine-grained` (auto-seeded into `gh` on first start), and point the `.env` refs at the project vault.
 
 **Host-side setup (one-time, macOS):**
 

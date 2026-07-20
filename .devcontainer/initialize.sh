@@ -73,14 +73,19 @@ fi
 # No Keychain item — or no `security` at all (Linux/Windows) — means nothing is
 # staged and the container works normally, just without pass-cli secrets.
 # See README "Task secrets via Proton Pass (pass-cli)".
+# Keychain lookup is per-project first (proton-pass-agent-pat-<dir name>), then
+# the shared default (proton-pass-agent-pat). Registering a project-specific
+# item opts this project into its own vault-scoped PAT — no config needed here.
 PAT_STAGE=".devcontainer/host-proton-pat"
 rm -f "$PAT_STAGE"
 if command -v security >/dev/null 2>&1; then
   umask 077
-  security find-generic-password -w -s proton-pass-agent-pat >"$PAT_STAGE" 2>/dev/null || {
-    rm -f "$PAT_STAGE"
-    echo "initialize.sh: proton-pass-agent-pat not found in Keychain; pass-cli login will be skipped" >&2
-  }
+  PROJECT_SERVICE="proton-pass-agent-pat-$(basename "$PWD")"
+  security find-generic-password -w -s "$PROJECT_SERVICE" >"$PAT_STAGE" 2>/dev/null ||
+    security find-generic-password -w -s proton-pass-agent-pat >"$PAT_STAGE" 2>/dev/null || {
+      rm -f "$PAT_STAGE"
+      echo "initialize.sh: neither $PROJECT_SERVICE nor proton-pass-agent-pat found in Keychain; pass-cli login will be skipped" >&2
+    }
 fi
 
 exit 0

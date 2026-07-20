@@ -70,12 +70,18 @@ if command -v pass-cli >/dev/null 2>&1; then
       pass-cli login
   fi
 
-  # Seed gh auth from the agent vault on first start (best-effort: skipped when
-  # the vault has no github token item or gh is already authenticated).
+  # Seed gh auth on first start from the item `github-fine-grained` in whatever
+  # vault(s) this PAT can see — per-project vaults keep their own repo-scoped
+  # GitHub PAT under that fixed item name. Best-effort: skipped when no such
+  # item exists or gh is already authenticated.
   if command -v gh >/dev/null 2>&1 && ! gh auth status >/dev/null 2>&1; then
-    GH_SEED_TOKEN="pass://agent-secrets/github-fine-grained/token" \
-      pass-cli run -- sh -c 'printf %s "$GH_SEED_TOKEN" | gh auth login --with-token' \
-      >/dev/null 2>&1 || true
+    pass-cli vault list 2>/dev/null | sed -n 's/^- \[[^]]*\]: //p' |
+      while IFS= read -r vault; do
+        GH_SEED_TOKEN="pass://$vault/github-fine-grained/token" \
+          pass-cli run -- sh -c 'printf %s "$GH_SEED_TOKEN" | gh auth login --with-token' \
+          >/dev/null 2>&1 || true
+        gh auth status >/dev/null 2>&1 && break
+      done || true
   fi
 fi
 rm -f .devcontainer/host-proton-pat
