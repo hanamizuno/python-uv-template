@@ -27,10 +27,12 @@ services:
       - uv-cache:/home/vscode/.cache/uv
       # Proton Pass: session volume so pass-cli login survives rebuilds. The PAT
       # itself arrives as the git-ignored .devcontainer/host-proton-pat stage
-      # (through the workspace mount; deleted by post-start.sh) — never via
-      # environment/remoteEnv (persists in container metadata / docker inspect)
-      # and never as an extra single-file bind mount (breaks startup when
-      # initializeCommand is skipped, e.g. Windows without Git Bash).
+      # (through the workspace mount; post-start.sh persists it to
+      # ~/.local/state/proton-pass-agent/pat for pass-relogin, then deletes the
+      # stage) — never via environment/remoteEnv (persists in container
+      # metadata / docker inspect) and never as an extra single-file bind mount
+      # (breaks startup when initializeCommand is skipped, e.g. Windows without
+      # Git Bash).
       - proton-pass:/home/vscode/.local/state/proton-pass
     environment:
       HISTFILE: /commandhistory/.bash_history

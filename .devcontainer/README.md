@@ -50,7 +50,7 @@ On every container create/start, `./initialize.sh` (an `initializeCommand`, runs
 
 If a host file does not exist its step is a no-op and the container starts normally.
 
-The staged `host-*` files (`host-gitignore`, `host-gituser`, `host-claude/`, `host-proton-pat`) are git-ignored local artifacts containing personal config. A `git clone` never carries them, but a plain filesystem copy (`cp -r`, zip) of a checkout would — exclude them when copying this template outside git. `host-proton-pat` briefly holds a real secret between `devcontainer up` and the container's post-start (which deletes it), so treat a lingering copy as a token to rotate.
+The staged `host-*` files (`host-gitignore`, `host-gituser`, `host-claude/`, `host-proton-pat`) are git-ignored local artifacts containing personal config. A `git clone` never carries them, but a plain filesystem copy (`cp -r`, zip) of a checkout would — exclude them when copying this template outside git. `host-proton-pat` briefly holds a real secret between `devcontainer up` and the container's post-start (which copies it into the container and deletes the stage), so treat a lingering copy as a token to rotate.
 
 > **Windows hosts:** `initializeCommand` runs a bash script on the host, so native Windows needs Git Bash/WSL on `PATH` — otherwise the sync is skipped but the container still starts.
 
@@ -161,7 +161,7 @@ When Claude Code runs with `--dangerously-skip-permissions`, it inherits whateve
 - Fine-grained PATs do not yet cover every `gh` subcommand — if you hit a 403 or "PAT not supported" error, fall back to a tightly-scoped classic PAT.
 - The token sits in `~/.config/gh/hosts.yml` inside the volume. Anyone with shell access in the container can read it, so treat compromise of the container as compromise of the token's scope.
 - Rotate by repeating step 2 + 3 — you do not need to recreate the volume.
-- Alternatively, `post-start.sh` seeds `gh auth` automatically from the `github-fine-grained` item in the agent vault when the volume has no auth yet (see the next section).
+- Alternatively, `.devcontainer/pass-relogin` seeds `gh auth` from the `github-fine-grained` item in the agent vault when the volume has no auth yet (see the next section).
 
 ## Task secrets via Proton Pass (pass-cli)
 
@@ -176,22 +176,30 @@ Agents here run unattended (`approval_policy = "never"`, `--dangerously-skip-per
 
    Values are resolved at spawn time, injected only into `<cmd>`'s environment, and masked as `<concealed by Proton Pass>` in stdout/stderr. `PROTON_PASS_AGENT_REASON` is required for item access on PAT (agent) sessions — `pass-cli run` fails with an error without it — and the value is recorded in Proton's audit log.
 
-**How the login gets there:** on the host, `initialize.sh` stages a Proton Pass personal access token (PAT) from the macOS Keychain — the per-project item `proton-pass-agent-pat-<project dir name>` when registered, else the shared `proton-pass-agent-pat` — as the git-ignored `.devcontainer/host-proton-pat` (0600) — the same host-* staging idiom as the config inheritance above, so no extra mount is involved; `post-start.sh` logs pass-cli in (the session persists in the `proton-pass` compose volume, so this happens only on first start and after PAT rotation) and then deletes the stage. No PAT in Keychain — or no `security` at all (Linux/Windows hosts) — means every step is skipped and the container works normally, just without pass-cli secrets.
+**How the login gets there:** on the host, `initialize.sh` stages the Proton Pass personal access token (PAT) from a 0600 file — the per-project `~/.config/proton-pass-agent/<project dir name>` when present, else the shared `~/.config/proton-pass-agent/pat` — as the git-ignored `.devcontainer/host-proton-pat`, the same host-* staging idiom as the config inheritance above, so no extra mount is involved. `post-start.sh` copies it to `~/.local/state/proton-pass-agent/pat` (0600) inside the container and deletes the stage. Login itself is agent-driven: `.devcontainer/pass-relogin` establishes (or re-establishes) the session from that copy whenever pass-cli has no session or reports an auth error — pass-cli sessions expire after a few hours, and this lets agents recover without a container restart. The session persists in the `proton-pass` compose volume across rebuilds. No host PAT file means every step is skipped and the container works normally, just without pass-cli secrets.
 
-**Scope model:** issue the PAT scoped to a dedicated vault (e.g. `agent-secrets`) with the `viewer` role and a short expiry. Anything in that vault is readable by the agent — treat "in the vault" as "handed to the agent", and keep the tokens themselves least-privilege (fine-grained GitHub PATs, etc.). Masking is hygiene, not a boundary: a subprocess can still write a secret to a file or send it over the network.
+Because the PAT stays resident in the container, treat container compromise as PAT compromise. The real boundary is the Proton-side scope below — a dedicated least-privilege vault, an expiry, and revocation — not where the file sits. (The agent never needs the token value: instructions in `AGENTS.md` point it at `pass-relogin`, so the value stays out of transcripts, agent memory, and model context.)
 
-**Per-project vaults (optional):** to give this project its own blast radius, create a vault (e.g. `agents-<project>`), issue a PAT scoped to just that vault, and register it as the Keychain item `proton-pass-agent-pat-<project dir name>` — `initialize.sh` picks it up automatically and falls back to the shared item when absent, so the repo needs no config. Name the PAT after the vault so Proton's audit log identifies which project's agent accessed what. Keep the project's repo-scoped GitHub PAT in that vault under the fixed item name `github-fine-grained` (auto-seeded into `gh` on first start), and point the `.env` refs at the project vault.
+**Scope model:** issue the PAT scoped to a dedicated vault (e.g. `agent-secrets`) with the `viewer` role and an expiry. Proton's default of 60 minutes is too short for this flow — pick something like 1–2 weeks and rotate. Anything in that vault is readable by the agent — treat "in the vault" as "handed to the agent", and keep the tokens themselves least-privilege (fine-grained GitHub PATs, etc.). Masking is hygiene, not a boundary: a subprocess can still write a secret to a file or send it over the network.
 
-**Host-side setup (one-time, macOS):**
+**Per-project vaults (optional):** to give this project its own blast radius, create a vault (e.g. `agents-<project>`), issue a PAT scoped to just that vault, and save it as `~/.config/proton-pass-agent/<project dir name>` — `initialize.sh` picks it up automatically and falls back to the shared file when absent, so the repo needs no config. Name the PAT after the vault so Proton's audit log identifies which project's agent accessed what. Keep the project's repo-scoped GitHub PAT in that vault under the fixed item name `github-fine-grained` (seeded into `gh` by `pass-relogin`), and point the `.env` refs at the project vault.
+
+**Host-side setup (one-time, any OS with bash):**
 
 ```bash
-read -rs PAT
-security add-generic-password -a "$USER" -s proton-pass-agent-pat \
-  -l 'Proton Pass agent PAT (devcontainer bootstrap)' -T /usr/bin/security -w "$PAT"
-unset PAT
+mkdir -p ~/.config/proton-pass-agent
+(umask 077; read -rs PAT; printf '%s' "$PAT" > ~/.config/proton-pass-agent/pat)
 ```
 
-`-T /usr/bin/security` pre-authorizes the read so `devcontainer up` stays unattended. Rotate by re-running with `-U` after minting a new PAT; containers re-login on their next start.
+Rotate by overwriting the file after minting a new PAT and restarting the container. Pick a path excluded from dotfile-sync tools and cloud backups. Previously registered the PAT in the macOS Keychain? Migrate with:
+
+```bash
+mkdir -p ~/.config/proton-pass-agent
+(umask 077; security find-generic-password -w -s proton-pass-agent-pat > ~/.config/proton-pass-agent/pat)
+security delete-generic-password -s proton-pass-agent-pat
+```
+
+(Repeat with `proton-pass-agent-pat-<project dir name>` → `~/.config/proton-pass-agent/<project dir name>` for per-project items.)
 
 ## .venv and uv cache isolation
 

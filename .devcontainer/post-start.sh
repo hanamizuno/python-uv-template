@@ -47,45 +47,30 @@ if [ -f .devcontainer/host-claude/settings.json ]; then
 fi
 
 # --- Proton Pass (pass-cli): task secrets ------------------------------------
-# Log pass-cli in from the PAT staged by initialize.sh as .devcontainer/
-# host-proton-pat (no stage = no PAT on this host; skip silently). The session
-# lives in a named volume, so the login runs only on first start and after a
-# PAT rotation. The stage is deleted right after — it is a regular file inside
-# the workspace mount, so the delete propagates to the host copy too.
+# Persist the PAT staged by initialize.sh as .devcontainer/host-proton-pat into
+# the container (0600, outside the workspace mount) so agents can log pass-cli
+# in — and re-login after session expiry — via .devcontainer/pass-relogin.
+# No login happens here; sessions are established on demand by the agent.
+# The stage is deleted right after — it is a regular file inside the workspace
+# mount, so the delete propagates to the host copy too. Deletion runs from an
+# EXIT trap so any failure (set -e) cannot leave the PAT behind. A missing
+# stage does NOT remove an existing container copy: initializeCommand may have
+# been skipped (e.g. Windows host without bash), and losing the copy would
+# take re-login down with it.
+trap 'rm -f .devcontainer/host-proton-pat' EXIT
 if command -v pass-cli >/dev/null 2>&1; then
-  export PROTON_PASS_KEY_PROVIDER="${PROTON_PASS_KEY_PROVIDER:-fs}"
   export PROTON_PASS_SESSION_DIR="${PROTON_PASS_SESSION_DIR:-$HOME/.local/state/proton-pass}"
   # Fix ownership of the session-volume mountpoint and its parents: docker
   # creates missing mountpoint paths as root (also repairs volumes created
   # before the Dockerfile pre-created these directories).
   sudo mkdir -p "$PROTON_PASS_SESSION_DIR"
   sudo chown vscode:vscode "$HOME/.local" "$HOME/.local/state" "$PROTON_PASS_SESSION_DIR"
-  # A set PROTON_PASS_PERSONAL_ACCESS_TOKEN makes `pass-cli login` take the PAT
-  # flow (safer than passing the token in argv via --pat). A stale local session
-  # (e.g. expired server-side) makes `login` fail with "Already authenticated",
-  # so clear it first — logout is a no-op when there is no session.
-  if ! pass-cli vault list >/dev/null 2>&1 && [ -s .devcontainer/host-proton-pat ]; then
-    pass-cli logout >/dev/null 2>&1 || true
-    PROTON_PASS_PERSONAL_ACCESS_TOKEN="$(cat .devcontainer/host-proton-pat)" \
-      pass-cli login
-  fi
-
-  # Seed gh auth on first start from the item `github-fine-grained` in whatever
-  # vault(s) this PAT can see — per-project vaults keep their own repo-scoped
-  # GitHub PAT under that fixed item name. Best-effort: skipped when no such
-  # item exists or gh is already authenticated.
-  # PROTON_PASS_AGENT_REASON is required for item access on PAT (agent)
-  # sessions — without it `pass-cli run` fails (and the failure is swallowed
-  # here). The value is recorded in Proton's audit log.
-  if command -v gh >/dev/null 2>&1 && ! gh auth status >/dev/null 2>&1; then
-    pass-cli vault list 2>/dev/null | sed -n 's/^- \[[^]]*\]: //p' |
-      while IFS= read -r vault; do
-        PROTON_PASS_AGENT_REASON="Seed gh auth from github-fine-grained (devcontainer post-start)" \
-          GH_SEED_TOKEN="pass://$vault/github-fine-grained/token" \
-          pass-cli run -- sh -c 'printf %s "$GH_SEED_TOKEN" | gh auth login --with-token' \
-          >/dev/null 2>&1 || true
-        gh auth status >/dev/null 2>&1 && break
-      done || true
+  # Kept in ~/.local/state/proton-pass-agent (NOT the pass-cli session dir,
+  # which pass-cli manages and `logout` may clear). Plain container FS, no
+  # volume: initialize.sh re-stages on every `devcontainer up`, so recreation
+  # repopulates it.
+  if [ -s .devcontainer/host-proton-pat ]; then
+    install -d -m 700 "$HOME/.local/state/proton-pass-agent"
+    install -m 600 .devcontainer/host-proton-pat "$HOME/.local/state/proton-pass-agent/pat"
   fi
 fi
-rm -f .devcontainer/host-proton-pat

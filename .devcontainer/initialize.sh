@@ -74,25 +74,42 @@ if [ -n "$GIT_EMAIL" ]; then
 fi
 
 # --- Proton Pass PAT (task secrets) ------------------------------------------
-# Stage the Proton Pass personal access token from the macOS Keychain (same
-# git-ignored host-* staging idiom as above) so post-start.sh can log pass-cli
-# in inside the container; post-start.sh deletes the stage right after login.
-# No Keychain item — or no `security` at all (Linux/Windows) — means nothing is
-# staged and the container works normally, just without pass-cli secrets.
+# Stage the Proton Pass personal access token from a 0600 host file (same
+# git-ignored host-* staging idiom as above); post-start.sh persists it inside
+# the container so agents can re-login when the pass-cli session expires, then
+# deletes the stage. No host file means nothing is staged and the container
+# works normally, just without pass-cli secrets.
 # See README "Task secrets via Proton Pass (pass-cli)".
-# Keychain lookup is per-project first (proton-pass-agent-pat-<dir name>), then
-# the shared default (proton-pass-agent-pat). Registering a project-specific
-# item opts this project into its own vault-scoped PAT — no config needed here.
+# Lookup is per-project first (~/.config/proton-pass-agent/<dir name>), then
+# the shared default (~/.config/proton-pass-agent/pat). Creating the
+# project-specific file opts this project into its own vault-scoped PAT — no
+# config needed here.
 PAT_STAGE=".devcontainer/host-proton-pat"
+PAT_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/proton-pass-agent"
 rm -f "$PAT_STAGE"
-if command -v security >/dev/null 2>&1; then
-  umask 077
-  PROJECT_SERVICE="proton-pass-agent-pat-$(basename "$PWD")"
-  security find-generic-password -w -s "$PROJECT_SERVICE" >"$PAT_STAGE" 2>/dev/null ||
-    security find-generic-password -w -s proton-pass-agent-pat >"$PAT_STAGE" 2>/dev/null || {
+for PAT_SRC in "$PAT_DIR/$(basename "$PWD")" "$PAT_DIR/pat"; do
+  if [ -f "$PAT_SRC" ]; then
+    umask 077
+    cp "$PAT_SRC" "$PAT_STAGE" 2>/dev/null || rm -f "$PAT_STAGE"
+    break
+  fi
+done
+[ -f "$PAT_STAGE" ] ||
+  echo "initialize.sh: no PAT file under $PAT_DIR; pass-cli login will be unavailable in the container" >&2
+
+# Normalize the stage: strip stray CR/LF (e.g. pasted along with the token)
+# and keep only a well-formed pst_<token>::<key> — anything else is dropped
+# with a warning so container startup never blocks on a malformed PAT.
+if [ -s "$PAT_STAGE" ]; then
+  PAT="$(tr -d '\r\n' <"$PAT_STAGE")"
+  case "$PAT" in
+    pst_*::*) printf '%s' "$PAT" >"$PAT_STAGE" ;;
+    *)
       rm -f "$PAT_STAGE"
-      echo "initialize.sh: neither $PROJECT_SERVICE nor proton-pass-agent-pat found in Keychain; pass-cli login will be skipped" >&2
-    }
+      echo "initialize.sh: PAT file is not in pst_<token>::<key> format; pass-cli login will be unavailable" >&2
+      ;;
+  esac
+  unset PAT
 fi
 
 exit 0

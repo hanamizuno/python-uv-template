@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# Idempotent "ensure pass-cli session" helper, run inside the container by
+# agents (or humans) whenever pass-cli reports an auth error or has no session.
+# Logs in from the PAT persisted by post-start.sh; the PAT value itself must
+# never be printed — agents only run this script, they never handle the token.
+set -euo pipefail
+
+PAT_FILE="$HOME/.local/state/proton-pass-agent/pat"
+export PROTON_PASS_KEY_PROVIDER="${PROTON_PASS_KEY_PROVIDER:-fs}"
+export PROTON_PASS_SESSION_DIR="${PROTON_PASS_SESSION_DIR:-$HOME/.local/state/proton-pass}"
+
+if pass-cli vault list >/dev/null 2>&1; then
+  echo "pass-cli session OK"
+else
+  if [ ! -s "$PAT_FILE" ]; then
+    echo "pass-relogin: no PAT at $PAT_FILE — on the HOST, put the token in" \
+      "~/.config/proton-pass-agent/<project dir name> (or .../pat) and restart the container" >&2
+    exit 1
+  fi
+  # A set PROTON_PASS_PERSONAL_ACCESS_TOKEN makes `pass-cli login` take the PAT
+  # flow (safer than passing the token in argv via --pat). A stale local session
+  # (e.g. expired server-side) makes `login` fail with "Already authenticated",
+  # so clear it first — logout is a no-op when there is no session.
+  pass-cli logout --force >/dev/null 2>&1 || true
+  PROTON_PASS_PERSONAL_ACCESS_TOKEN="$(cat "$PAT_FILE")" pass-cli login
+  pass-cli info
+fi
+
+# Seed gh auth from the item `github-fine-grained` in whatever vault(s) this
+# PAT can see — per-project vaults keep their own repo-scoped GitHub PAT under
+# that fixed item name. Best-effort: skipped when no such item exists or gh is
+# already authenticated. The token flows through the pipe only — never printed.
+# (`pass-cli run` with a name-based pass:// env ref does not resolve — URIs
+# are ID-based, see `pass-cli item view --help` — so fetch the field directly.)
+# PROTON_PASS_AGENT_REASON is required for item access on PAT (agent) sessions
+# — without it `item view` fails (and the failure is swallowed here). The
+# value is recorded in Proton's audit log.
+if command -v gh >/dev/null 2>&1 && ! gh auth status >/dev/null 2>&1; then
+  pass-cli vault list 2>/dev/null | sed -n 's/^- \[[^]]*\]: //p' |
+    while IFS= read -r vault; do
+      # Fetch first, then log in only on a non-empty token: an empty stdin
+      # makes `gh auth login --with-token` fall back to interactive prompts
+      # and hang forever in unattended runs.
+      GH_SEED_TOKEN="$(PROTON_PASS_AGENT_REASON="Seed gh auth from github-fine-grained (pass-relogin)" \
+        pass-cli item view --vault-name "$vault" --item-title github-fine-grained \
+          --field token 2>/dev/null || true)"
+      if [ -n "$GH_SEED_TOKEN" ]; then
+        printf '%s\n' "$GH_SEED_TOKEN" | gh auth login --with-token >/dev/null 2>&1 || true
+      fi
+      unset GH_SEED_TOKEN
+      gh auth status >/dev/null 2>&1 && break
+    done || true
+fi

@@ -50,6 +50,9 @@ Setup is automatic in the Dev Container (post-create). Elsewhere, [install prek]
 
 ## Security & Configuration Tips
 - Do not commit secrets; prefer env vars and Compose overrides.
+- Task secrets (API keys, tokens) come from Proton Pass via `pass-cli`, never from ambient env. Run commands that need them as `PROTON_PASS_AGENT_REASON="<why>" pass-cli run --env-file .env -- <cmd>` (`.env` holds only `pass://` references; copy from `example.env`).
+- If any `pass-cli` command fails with an auth error — or there is no active session (`pass-cli info` fails) — run `.devcontainer/pass-relogin` and retry. It restores the session (and seeds `gh auth` when missing) from a token already provisioned in the container.
+- Never read, print, or copy `~/.local/state/proton-pass-agent/pat` — you never need the token value itself; `pass-relogin` handles it.
 - Pin dependencies via `uv.lock`; update with care (`uv sync --upgrade`).
 - CI (`.github/workflows/ci.yml`) runs lint, type check, and tests in a single job; keep the pipeline green before merging.
 
