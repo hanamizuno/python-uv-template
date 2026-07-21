@@ -167,7 +167,7 @@ When Claude Code runs with `--dangerously-skip-permissions`, it inherits whateve
 
 Agents here run unattended (`approval_policy = "never"`, `--dangerously-skip-permissions`) and can read anything in their environment, so task secrets must not sit in ambient container env — which is exactly what a `remoteEnv`/`containerEnv` passthrough would do. Instead, the [Proton Pass CLI](https://protonpass.github.io/pass-cli/) is baked into the devcontainer stage and secrets are injected per command:
 
-1. `.env` (git-ignored) holds only `pass://agent-secrets/<item>/<field>` *references* — copy `example.env` to `.env` to start. References are names, not values, so `example.env` is safe to commit; the real `.env` stays ignored as insurance against pasting an actual token into it.
+1. `.env` (git-ignored) holds only `pass://SHARE_ID/ITEM_ID/FIELD` *references* — copy `example.env` to `.env` to start. References are ID-based: vault or item *names* in the URI do not resolve (pass-cli passes them through untouched). Look the IDs up with `pass-cli item list --vault-name <vault> --output json` (fields `share_id` / `id`). References are identifiers, not values, so `example.env` is safe to commit; the real `.env` stays ignored as insurance against pasting an actual token into it.
 2. Run commands that need secrets through `pass-cli run`:
 
    ```bash
@@ -182,7 +182,7 @@ Because the PAT stays resident in the container, treat container compromise as P
 
 **Scope model:** issue the PAT scoped to a dedicated vault (e.g. `agent-secrets`) with the `viewer` role and an expiry. Proton's default of 60 minutes is too short for this flow — pick something like 1–2 weeks and rotate. Anything in that vault is readable by the agent — treat "in the vault" as "handed to the agent", and keep the tokens themselves least-privilege (fine-grained GitHub PATs, etc.). Masking is hygiene, not a boundary: a subprocess can still write a secret to a file or send it over the network.
 
-**Per-project vaults (optional):** to give this project its own blast radius, create a vault (e.g. `agents-<project>`), issue a PAT scoped to just that vault, and save it as `~/.config/proton-pass-agent/<project dir name>` — `initialize.sh` picks it up automatically and falls back to the shared file when absent, so the repo needs no config. Name the PAT after the vault so Proton's audit log identifies which project's agent accessed what. Keep the project's repo-scoped GitHub PAT in that vault under the fixed item name `github-fine-grained` (seeded into `gh` by `pass-relogin`), and point the `.env` refs at the project vault.
+**Per-project vaults (optional):** to give this project its own blast radius, create a vault (e.g. `agents-<project>`), issue a PAT scoped to just that vault, and save it as `~/.config/proton-pass-agent/<project dir name>` — `initialize.sh` picks it up automatically and falls back to the shared file when absent, so the repo needs no config. Name the PAT after the vault so Proton's audit log identifies which project's agent accessed what. Keep the project's repo-scoped GitHub PAT in that vault under the fixed item name `github-fine-grained` (seeded into `gh` by `pass-relogin`), and mint the `.env` refs from that vault's item IDs.
 
 **Host-side setup (one-time, any OS with bash):**
 
