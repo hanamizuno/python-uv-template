@@ -6,6 +6,12 @@ readme = "README.md"
 requires-python = ">=3.14"
 dependencies = []
 
+[tool.uv]
+# Exclude packages released within the last 7 days to avoid pulling in
+# brand-new (potentially compromised) releases. Keep in sync with the
+# Dependabot `cooldown.default-days` in .github/dependabot.yml.
+exclude-newer = "7 days"
+
 [dependency-groups]
 dev = [
   "pyright>=1.1.411",
@@ -46,6 +52,8 @@ show_missing = true
 # cf. https://docs.astral.sh/ruff/rules/
 select = ["ALL"]
 ignore = [
+  # This template does not use copyright notices
+  "CPY001",
   # Not recommended to use with formatter
   "COM812",
   "COM819",

@@ -32,6 +32,7 @@ cf. https://zenn.dev/dajiaji/articles/47164ff27d2123
 - **Minimum Privileges**: Workflows use `permissions: {}` at top level
 - **SHA Pinning**: All GitHub Actions are pinned to commit SHAs
 - **Dependabot Cooldown**: 7-day delay before accepting new package versions
+- **Resolution Cooldown**: uv's [`exclude-newer`](https://docs.astral.sh/uv/concepts/resolution/#reproducible-resolutions) is set to `7 days`, so `uv lock` never resolves to packages released within the last 7 days (kept in sync with the Dependabot cooldown)
 - **Vulnerability Scanning**: Trivy scans dependencies on dependency/Dockerfile/workflow changes and weekly — PRs fail on CRITICAL/HIGH findings; `push`/`schedule` runs upload SARIF results to the GitHub Security tab
 - **SBOM Generation**: CycloneDX SBOM generated on dependency changes
 - **Workflow Auditing**: zizmor checks for workflow security issues
