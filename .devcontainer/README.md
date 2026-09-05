@@ -96,7 +96,7 @@ The container compresses the blast radius from "everything the host user can tou
 - Granular network allow/deny lists (only the binary `--network=internal` mode above; the previous iptables-based allowlist was removed because it was hard to keep correct).
 - A nested Docker daemon for safely building/running containers from inside the agent session (the host Docker socket is intentionally not mounted).
 
-If you need any of those, run the agent inside a higher-assurance sandbox such as [Docker Sandbox](https://docs.docker.com/ai/sandboxes/) (microVM kernel boundary, allow/deny networking, per-sandbox Docker daemon) and treat this devcontainer as the inner workspace.
+If you need any of those, run the agent inside a higher-assurance sandbox such as [Docker Sandbox](https://docs.docker.com/ai/sandboxes/) (microVM kernel boundary, allow/deny networking, per-sandbox Docker daemon) and treat this devcontainer as the inner workspace. This repository ships Docker Sandboxes (`sbx`) kits for exactly that in `.sandbox/` — see [`../.sandbox/README.md`](../.sandbox/README.md).
 
 **Host loopback access is intentionally not opened.** `host.docker.internal` is not added by default — opening it would expose every `0.0.0.0`-bound host service (local LLM servers, dev DBs, debug dashboards) to the agent. If you specifically need it — e.g. to point an agent at a locally hosted OpenAI-compatible endpoint — add it as a local override, not a project default:
 

@@ -14,6 +14,7 @@ This template targets **non-distributed Python applications** (services, interna
 *   **Containerized Development:**
     *   **Docker & Docker Compose:** Provides consistent development and production environments using multi-stage builds (`dev`, `prod`, `devcontainer`).
     *   **VSCode Dev Containers:** Includes a `.devcontainer/devcontainer.json` configuration that layers the AI agent toolchain (Claude Code CLI, Codex CLI, GitHub CLI, common utilities) on top of the project's Python environment via [Dev Container Features](https://containers.dev/implementors/features/) and post-create setup.
+*   **AI Agent Sandbox:** [Docker Sandboxes](https://docs.docker.com/ai/sandboxes/) (`sbx`) kits in `.sandbox/` run agents under stronger isolation — a microVM kernel boundary, deny-by-default networking, and credentials that never enter the VM. Coexists with the Dev Container; launched from the host.
 *   **Development Tools:** Integrated with standard development tools:
     *   [`ruff`](https://docs.astral.sh/ruff/) for linting and formatting.
     *   [`pyright`](https://microsoft.github.io/pyright/) for static type checking.
@@ -50,6 +51,7 @@ cf. https://zenn.dev/dajiaji/articles/47164ff27d2123
 
 ```
 .
+├── .claude/                    # Claude Code settings (permissions.defaultMode: auto)
 ├── .devcontainer/              # Dev Container config (also runs the AI agent toolchain via Features)
 │   ├── codex-config.toml       # Initial Codex CLI config copied into the persisted ~/.codex volume
 │   ├── compose.yaml            # Devcontainer compose definition (merged with git-ignored compose.local.yaml)
@@ -80,6 +82,11 @@ cf. https://zenn.dev/dajiaji/articles/47164ff27d2123
 ├── .gitignore
 ├── .pre-commit-config.yaml     # Pre-commit hooks (run via prek)
 ├── .python-version             # Specifies Python version (primarily for uv/tooling)
+├── .sandbox/                   # Docker Sandboxes (sbx) kits — stronger agent isolation (host-side)
+│   ├── claude-auto/            # Fork kit: claude's YOLO default -> --permission-mode auto
+│   ├── codex-approve/          # Fork kit: codex's YOLO default -> --approve-for-me
+│   ├── kit/                    # Shared mixin kit (uv, Python, prek, Codex CLI, network/credential rules)
+│   └── README.md               # sbx operations guide (setup, clone mode, policy audit, checklist)
 ├── .vscode/                    # VSCode-specific files
 │   └── settings.json
 ├── AGENTS.md                   # Project guidelines for AI agents and humans
@@ -197,3 +204,19 @@ task test_cov
 ## AI Agent Dev Container
 
 The Dev Container also serves as the runtime for AI coding agents (Claude Code, Codex, etc.) — toolchain, authentication, host config inheritance, isolation modes, and scoped GitHub PAT setup are documented in [`.devcontainer/README.md`](.devcontainer/README.md).
+
+## AI Agent Sandbox (Docker Sandboxes)
+
+For unattended agent runs that need stronger isolation than a Linux container —
+a microVM kernel boundary, deny-by-default networking, and secrets that never enter the VM —
+`.sandbox/` ships kits for [Docker Sandboxes](https://docs.docker.com/ai/sandboxes/) (`sbx`).
+It coexists with the Dev Container and is launched from the host, e.g.:
+
+```bash
+sbx create --name claude-auto-<dir> --clone --kit ./.sandbox/kit claude .
+sbx exec -it -w "$PWD" claude-auto-<dir> claude --permission-mode auto
+```
+
+`sbx` runs on the host OS and cannot be used from inside the Dev Container.
+See [`.sandbox/README.md`](.sandbox/README.md) for setup, the reason `--clone` is
+mandatory, network policy auditing, task secrets, and the host trial checklist.
