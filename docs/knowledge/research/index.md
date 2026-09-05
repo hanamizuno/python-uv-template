@@ -12,4 +12,5 @@ Snapshots of deep-research output, manual investigations, and comparative analys
 
 ## Index
 
+* [sbx-known-and-unverified.md](sbx-known-and-unverified.md) — sbx facts carried over from a sibling template vs. what's unverified for this Python/uv kit.
 * [sample-research.md](sample-research.md) — Sample. Replace with a real research note (or delete) once you have one.
