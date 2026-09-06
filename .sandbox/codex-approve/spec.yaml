@@ -1,0 +1,50 @@
+# A fork of the built-in `codex` agent for Docker Sandboxes.
+# Its only job is to replace the default YOLO launch command with
+# "approve for me".
+#
+# The sbx codex template launches
+# `codex --dangerously-bypass-approvals-and-sandbox` by default (= neither
+# approvals nor a sandbox). Passing arguments through with `--` only *appends*
+# them after the default flags and cannot cancel them, so the only way to
+# override is to replace the entrypoint. An entrypoint can only be declared in
+# a `sandbox:` block, and a mixin kit (../kit/spec.yaml) cannot carry one —
+# hence this separate kit alongside the shared mixin.
+#
+# Usage (on the host; the agent positional argument is this kit's name, and
+# --kit is given twice):
+#   sbx run codex-approve --clone --kit ./.sandbox/kit --kit ./.sandbox/codex-approve
+#
+# Caveat: a kit that extends a built-in agent cannot use the proxy-managed
+# OAuth, so you register an API key with `sbx secret set openai` on the host
+# before launching rather than using ChatGPT subscription authentication. To
+# keep subscription authentication, use the other approach instead — create
+# the sandbox and launch it with `sbx exec` (approach A in ../README.md
+# "Overriding the YOLO defaults").
+#
+# Schema: https://docs.docker.com/ai/sandboxes/customize/kit-reference/
+schemaVersion: "2"
+kind: sandbox
+name: codex-approve
+displayName: Codex (approve for me)
+description: A fork of codex that launches Codex in approve-for-me mode
+extends: codex
+
+sandbox:
+  # The effective command is entrypoint + command (command.interactive for TTY
+  # sessions, command.default otherwise). It is not documented whether the
+  # parent's `codex --dangerously-bypass-approvals-and-sandbox` carries the
+  # flag on the entrypoint or as an argument tail on the command, so **declare
+  # both explicitly to inherit nothing**. Replacing only the entrypoint would
+  # leave YOLO in place unnoticed (a silent failure) if the parent's bypass
+  # flag lives on the command side. Avoid that.
+  #
+  # --approve-for-me keeps the workspace-write sandbox while routing escalated
+  # approval requests to an automatic review instead of a human. It is the same
+  # policy as the `approval_policy = "on-request"` /
+  # `approvals_reviewer = "auto_review"` that the shared mixin seeds into
+  # ~/.codex/config.toml; here it is stated explicitly as a launch flag (the
+  # config file is what applies when Claude Code delegates to Codex).
+  entrypoint: [codex]
+  command:
+    default: ["--approve-for-me"]
+    interactive: ["--approve-for-me"]

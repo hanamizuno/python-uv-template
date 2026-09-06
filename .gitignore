@@ -36,6 +36,9 @@ cover/
 # macOS
 .DS_Store
 
+# Claude Code (local-only settings; the shared .claude/settings.json is committed)
+.claude/settings.local.json
+
 # Host config staged for the devcontainer (see .devcontainer/initialize.sh)
 .devcontainer/host-gitignore
 .devcontainer/host-gituser

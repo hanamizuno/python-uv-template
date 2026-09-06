@@ -20,6 +20,8 @@ meta:
           - "compose.yml"
           - "compose.dev.yml"
           - ".devcontainer/**"
+          # AI agent sandbox kits (Docker Sandboxes / sbx)
+          - ".sandbox/**"
           # Tooling / editor config (ruff, pyright, pytest, taskipy live in pyproject.toml)
           - "pyproject.toml"
           - ".pre-commit-config.yaml"

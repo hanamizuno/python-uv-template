@@ -1,0 +1,45 @@
+# A fork of the built-in `claude` agent for Docker Sandboxes.
+# Its only job is to replace the default YOLO launch command with auto mode.
+#
+# The sbx claude template launches `claude --dangerously-skip-permissions` by
+# default (= permission checks skipped entirely). Passing arguments through
+# with `--` only *appends* them after the default flags and cannot cancel
+# them, so the only way to override is to replace the entrypoint. An
+# entrypoint can only be declared in a `sandbox:` block, and a mixin kit
+# (../kit/spec.yaml) cannot carry one — hence this separate kit alongside the
+# shared mixin.
+#
+# Usage (on the host; the agent positional argument is this kit's name, and
+# --kit is given twice):
+#   sbx run claude-auto --clone --kit ./.sandbox/kit --kit ./.sandbox/claude-auto
+#
+# Caveat: a kit that extends a built-in agent cannot use the proxy-managed
+# OAuth, so `sbx secret set anthropic` (an API key) is required on the host
+# before the first launch. To keep subscription authentication, use the other
+# approach instead — create the sandbox and launch it with `sbx exec`
+# (approach A in ../README.md "Overriding the YOLO defaults").
+#
+# Schema: https://docs.docker.com/ai/sandboxes/customize/kit-reference/
+schemaVersion: "2"
+kind: sandbox
+name: claude-auto
+displayName: Claude Code (auto mode)
+description: A fork of claude that launches Claude Code in auto permission mode
+extends: claude
+
+sandbox:
+  # The effective command is entrypoint + command (command.interactive for TTY
+  # sessions, command.default otherwise). It is not documented whether the
+  # parent's `claude --dangerously-skip-permissions` carries the flag on the
+  # entrypoint or as an argument tail on the command, so **declare both
+  # explicitly to inherit nothing**.
+  # Replacing only the entrypoint would yield
+  # `claude --permission-mode auto --dangerously-skip-permissions` if the
+  # parent's bypass flag lives on the command side — leaving YOLO in place
+  # unnoticed (a silent failure). Avoid that.
+  # Omitting `interactive` is specified to fall back to `default`, but whether
+  # the parent's `interactive` survives is ambiguous, so declare it too.
+  entrypoint: [claude]
+  command:
+    default: ["--permission-mode", "auto"]
+    interactive: ["--permission-mode", "auto"]

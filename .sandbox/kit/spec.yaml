@@ -1,0 +1,251 @@
+# Shared mixin kit for Docker Sandboxes (sbx).
+# Apply it from this repository's checkout directory (on the host). --clone is
+# mandatory — see ../README.md "Running in clone mode":
+#   sbx create --name claude-auto-<dir> --clone --kit ./.sandbox/kit claude .
+#
+# claude / codex ship with YOLO default launch commands, so overriding them
+# takes an extra step. A mixin cannot carry a `sandbox:` block (= entrypoint /
+# command), so this kit alone cannot override them. There are two approaches:
+#   A) Create the sandbox only, then exec with the flags you want (keeps
+#      subscription auth):
+#        sbx create --name claude-auto-<dir> --clone --kit ./.sandbox/kit claude .
+#        sbx exec -it -w "$PWD" claude-auto-<dir> claude --permission-mode auto
+#   B) Layer a fork kit that replaces the launch command (no OAuth; needs an
+#      API key):
+#        sbx run claude-auto   --clone --kit ./.sandbox/kit --kit ./.sandbox/claude-auto
+#        sbx run codex-approve --clone --kit ./.sandbox/kit --kit ./.sandbox/codex-approve
+# See ../README.md "Overriding the YOLO defaults".
+#
+# There is deliberately no per-agent kit: agent-specific setup (the Codex
+# config seed, the Codex plugin registration for Claude Code) is guarded so it
+# stays harmless in a sandbox built from a different agent template — the
+# config is never read, the registration is skipped. The claude sandbox also
+# gets the Codex CLI so Claude Code can orchestrate delegated runs
+# (see ../README.md "Orchestration").
+#
+# Schema: https://docs.docker.com/ai/sandboxes/customize/kit-reference/
+# Host verification steps and known-unverified items live in ../README.md.
+schemaVersion: "2"
+kind: mixin
+name: python-uv-agent-env
+description: Python 3.14 + uv + prek + Codex CLI agent execution environment
+
+setup:
+  install:
+    # install commands run as root (user "0") by default. Only user-scoped
+    # setup (uv's managed Python, uv tools, Claude Code plugin registration)
+    # runs as user "1000" (agent). Every step is idempotent — they re-run only
+    # when the sandbox is recreated (sbx rm -> run).
+    #
+    # NOTE: the cwd of an install step is not necessarily the workspace, so
+    # `uv sync` and `prek install` are NOT run here — they are handled by the
+    # agent per `agentInstructions` below.
+
+    - description: uv (skipped when the sandbox template already ships it)
+      command: |
+        set -eu
+        if ! command -v uv >/dev/null 2>&1; then
+          curl -LsSf https://astral.sh/uv/install.sh \
+            | env UV_INSTALL_DIR=/usr/local/bin UV_NO_MODIFY_PATH=1 sh
+        fi
+        uv --version
+
+    # `uv tool install` places shims in ~/.local/bin, which is not on PATH in
+    # the sandbox templates. Non-login shells do not read profile.d, so
+    # agentInstructions also spells out the absolute path.
+    - description: PATH entry for uv-installed tools (~/.local/bin)
+      command: |
+        set -eu
+        cat > /etc/profile.d/10-uv-local-bin.sh <<'PROFILE'
+        # uv tool install (prek, ...) places shims in ~/.local/bin.
+        case ":$PATH:" in
+          *":$HOME/.local/bin:"*) ;;
+          *) PATH="$HOME/.local/bin:$PATH" ;;
+        esac
+        export PATH
+        PROFILE
+
+    # Pre-fetch the interpreter so the first `uv sync` is fast and still works
+    # if the network policy is tightened later. Keep in sync with
+    # .python-version and `requires-python` in pyproject.toml.
+    - description: Python 3.14 toolchain (matches .python-version)
+      user: "1000"
+      command: |
+        set -eu
+        uv python install 3.14
+
+    # Same pre-commit hook runner the Dev Container uses
+    # (.devcontainer/post-create.sh). Registering the git hook needs the
+    # workspace as cwd, so `prek install` is left to the agent.
+    - description: prek (pre-commit hook runner)
+      user: "1000"
+      command: |
+        set -eu
+        uv tool install prek
+
+    # Version pinned for reproducibility and supply-chain hygiene (the
+    # Dev Container installs it unpinned; bump both together). Node comes from
+    # the sandbox template image — this project itself needs no Node.
+    - description: Codex CLI (skipped when the sandbox template already ships it)
+      command: |
+        set -eu
+        if ! command -v codex >/dev/null 2>&1; then
+          if command -v npm >/dev/null 2>&1; then
+            npm install -g @openai/codex@0.149.1
+          else
+            echo "npm not found: cannot install the Codex CLI" >&2
+            exit 1
+          fi
+        fi
+
+    # Register Codex as a Claude Code plugin so Claude Code can delegate to
+    # Codex on demand (the codex-rescue subagent + /codex skills). Mirrors
+    # .devcontainer/post-create.sh. Skipped in sandboxes without claude, and
+    # skipped when already installed, so the step stays idempotent.
+    # Marketplace installs cannot pin a version, so this one always takes the
+    # latest.
+    - description: Codex plugin for Claude Code (claude sandboxes only)
+      user: "1000"
+      command: |
+        set -eu
+        command -v claude >/dev/null 2>&1 || exit 0
+        if ! claude plugin list 2>/dev/null | grep -q 'codex@openai-codex'; then
+          claude plugin marketplace add openai/codex-plugin-cc || true
+          claude plugin install codex@openai-codex
+        fi
+
+  files:
+    # Initial Codex CLI config. Not overwritten if the codex template already
+    # seeded one. ${WORKDIR} expands to the workspace's absolute path at
+    # sandbox creation (in clone mode, the path of the clone inside the VM).
+    # Kept aligned with .devcontainer/codex-config.toml except for the
+    # approval policy — see ../README.md "How this relates to the config files".
+    - path: /home/agent/.codex/config.toml
+      onlyIfMissing: true
+      content: |
+        #:schema https://developers.openai.com/codex/config-schema.json
+
+        # The sandbox (microVM) is itself the isolation boundary for autonomous
+        # agent runs. Keep writes scoped to the workspace, but route escalated
+        # approval requests to an automatic review rather than to a human
+        # (equivalent to the CLI's `--approve-for-me`). Unlike
+        # `approval_policy = "never"`, which never asks at all, deviations such
+        # as writing outside the sandbox or cutting the network still go
+        # through a risk assessment before being allowed or denied.
+        approval_policy = "on-request"
+        approvals_reviewer = "auto_review"
+        sandbox_mode = "workspace-write"
+        project_doc_max_bytes = 65536
+
+        [sandbox_workspace_write]
+        network_access = true
+
+        [projects."${WORKDIR}"]
+        trust_level = "trusted"
+
+permissions:
+  network:
+    # Additional allowances on top of the deny-by-default policy (what this
+    # repository's work needs). This *adds* to the default policy — it does not
+    # trim the default's broad wildcards. Inspecting and narrowing the
+    # effective policy is a host-side operation
+    # (see ../README.md "Auditing the network policy").
+    allow:
+      # apt
+      - deb.debian.org
+      - security.debian.org
+      - archive.ubuntu.com
+      - security.ubuntu.com
+      - ports.ubuntu.com
+      # uv itself and its managed CPython builds (python-build-standalone is
+      # served from GitHub release assets)
+      - astral.sh
+      - github.com
+      - codeload.github.com
+      - objects.githubusercontent.com
+      - release-assets.githubusercontent.com
+      - raw.githubusercontent.com
+      # Python packages
+      - pypi.org
+      - files.pythonhosted.org
+      # Codex CLI and the Claude Code plugin marketplace
+      - registry.npmjs.org
+      # Claude Code
+      - api.anthropic.com
+      - statsig.anthropic.com
+      # Destinations needed if an interactive login (OAuth) becomes necessary
+      # inside the VM. The default policy denies these (measured: 403). Unused
+      # in sandboxes that carry another auth source such as an API key.
+      - console.anthropic.com
+      - claude.ai
+      # Codex
+      - api.openai.com
+      - auth.openai.com
+      - chatgpt.com
+      # GitHub API
+      - api.github.com
+
+credentials:
+  # A fine-grained PAT registered on the host with
+  # `sbx secret set github --sandbox <sandbox name>` is injected as a header by
+  # the proxy, for GitHub-bound requests only (the service name matches the
+  # registration name). Register it scoped to the sandbox — never globally
+  # (-g), which would leak into sandboxes for other repositories. GH_TOKEN
+  # inside the VM holds a sentinel value; the real value is only ever spliced
+  # into the header by the proxy just before the request leaves — it never
+  # enters the VM. PAT scoping follows .devcontainer/README.md
+  # "Restricting GitHub permissions (PAT)".
+  - service: github
+    apiKey:
+      name: GH_TOKEN
+      proxyManaged: true
+      inject:
+        - domain: api.github.com
+          header: Authorization
+          format: "token %s"
+        - domain: github.com
+          header: Authorization
+          format: "token %s"
+  # Template for a task API key. To use it, uncomment, run
+  # `sbx secret set example --sandbox <sandbox name>` on the host, and recreate
+  # the sandbox (this kit contains setup.files, so `sbx kit add` cannot apply
+  # it in place).
+  # - service: example
+  #   apiKey:
+  #     name: EXAMPLE_API_KEY
+  #     proxyManaged: true
+  #     inject:
+  #       - domain: api.example.com
+  #         header: Authorization
+  #         format: "Bearer %s"
+
+agentInstructions:
+  content: |
+    - This environment is a Docker Sandboxes microVM. The workspace is an
+      independent git clone (clone mode), not the host's working tree. Edits do
+      NOT sync back to the host — always commit and push your results
+      (`sbx rm` discards any commit you did not push). Pushing to GitHub is
+      known to work.
+    - To pick up commits the host added after the sandbox was created, fetch
+      from `/run/sandbox/source`, a read-only bind mount of the host repository
+      (`git fetch /run/sandbox/source`). `origin` points at GitHub and does not
+      contain the host's unpushed commits.
+    - Gitignored files (local settings and the like) are not part of the clone.
+    - Python tooling is uv. Start with `uv sync --frozen`; run tasks as
+      `uv run task lint` / `uv run task test` / `uv run task test_cov`.
+    - Before committing, register the pre-commit hooks once with
+      `~/.local/bin/prek install` (prek is installed but ~/.local/bin is not on
+      PATH in non-login shells).
+    - Do not use `pkill -f <pattern>` to stop background processes: the whole
+      command line matches, so your own shell matches too and gets killed. Kill
+      by PID instead — `PID=$(pgrep -f '<pattern>' | head -1); kill "$PID"`.
+    - GitHub authentication is injected as a header by the host-side proxy. The
+      GH_TOKEN environment variable holds a sentinel, not the real value, and
+      the real token does not exist in this environment. There is never any
+      reason to read, search for, or print it.
+    - pass-cli / pass-relogin do NOT exist here (they are Dev Container-only).
+      AGENTS.md describes them because it also covers the Dev Container; ignore
+      those instructions in this environment.
+    - Outbound traffic is a deny-by-default domain allowlist. The kit only adds
+      the allowances this repository's work needs — it is not the full
+      effective policy.

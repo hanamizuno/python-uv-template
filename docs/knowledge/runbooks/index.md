@@ -12,4 +12,7 @@ Incident response and routine operational procedures. A good runbook pairs **rep
 
 ## Index
 
+* [devcontainer-github-pat.md](devcontainer-github-pat.md) — Issue and seed a scoped GitHub PAT for the devcontainer's agents.
+* [devcontainer-secrets-proton-pass.md](devcontainer-secrets-proton-pass.md) — Task secrets via Proton Pass (pass-cli): usage, mechanics, host setup.
+* [agent-sandbox-sbx.md](agent-sandbox-sbx.md) — The sbx microVM agent sandbox: YOLO override, clone mode, secrets, auth troubleshooting, first-run checklist.
 * [sample-runbook.md](sample-runbook.md) — Sample. Replace with a real runbook (or delete) once you have one.

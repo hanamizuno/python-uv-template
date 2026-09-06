@@ -14,4 +14,5 @@ Keep these documents complementary to the code and to `README.md` — record the
 
 ## Index
 
+* [devcontainer-agent-runtime.md](devcontainer-agent-runtime.md) — Dev Container as AI agent runtime: host config inheritance, isolation modes and limits, venv/cache isolation.
 * [sample-service-overview.md](sample-service-overview.md) — Sample. Replace with a real architecture note (or delete) once you have one.
