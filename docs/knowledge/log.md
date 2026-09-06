@@ -22,10 +22,7 @@ heading (`## YYYY-MM-DD`). Keep each bullet terse and link to the concrete file.
   * [architecture/devcontainer-agent-runtime.md](/docs/knowledge/architecture/devcontainer-agent-runtime.md) — host config inheritance, isolation modes and limits, venv/cache isolation.
   * [runbooks/devcontainer-github-pat.md](/docs/knowledge/runbooks/devcontainer-github-pat.md) — scoped GitHub PAT setup.
   * [runbooks/devcontainer-secrets-proton-pass.md](/docs/knowledge/runbooks/devcontainer-secrets-proton-pass.md) — Proton Pass task-secrets flow.
-* **Moved from `.sandbox/README.md`**: same trim, for the sbx setup added on this branch — the README keeps setup/day-to-day steps only.
-  * [architecture/sbx-agent-sandbox.md](/docs/knowledge/architecture/sbx-agent-sandbox.md) — clone-mode mechanics, mounting, inheritance, task-secrets model, orchestration.
-  * [runbooks/sbx-setup-and-yolo-override.md](/docs/knowledge/runbooks/sbx-setup-and-yolo-override.md) — approach A/B for overriding YOLO defaults.
-  * [runbooks/sbx-host-trial-checklist.md](/docs/knowledge/runbooks/sbx-host-trial-checklist.md) — hardware verification checklist.
-  * [runbooks/sbx-troubleshooting-auth.md](/docs/knowledge/runbooks/sbx-troubleshooting-auth.md) — `sbx login`/`sandboxd` auth recovery.
-  * [research/sbx-known-and-unverified.md](/docs/knowledge/research/sbx-known-and-unverified.md) — verified-elsewhere vs. unverified-here facts.
+* **Moved from `.sandbox/README.md`**: same trim, for the sbx setup added on this branch — the README keeps setup, day-to-day, and host hand-off steps only.
+  * [runbooks/agent-sandbox-sbx.md](/docs/knowledge/runbooks/agent-sandbox-sbx.md) — YOLO override, clone mode, mounting, secrets, orchestration, auth troubleshooting, first-run checklist.
+  * [research/sbx-verification.md](/docs/knowledge/research/sbx-verification.md) — verified-elsewhere vs. unverified-here facts.
   * [adr/0002-coexist-sbx-with-devcontainer.md](/docs/knowledge/adr/0002-coexist-sbx-with-devcontainer.md) — the coexistence decision and Dev Container retirement criteria.

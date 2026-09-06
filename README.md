@@ -86,7 +86,7 @@ cf. https://zenn.dev/dajiaji/articles/47164ff27d2123
 │   ├── claude-auto/            # Fork kit: claude's YOLO default -> --permission-mode auto
 │   ├── codex-approve/          # Fork kit: codex's YOLO default -> --approve-for-me
 │   ├── kit/                    # Shared mixin kit (uv, Python, prek, Codex CLI, network/credential rules)
-│   └── README.md               # sbx operations guide (setup, clone mode, policy audit, checklist)
+│   └── README.md               # sbx setup and host hand-off steps
 ├── .vscode/                    # VSCode-specific files
 │   └── settings.json
 ├── AGENTS.md                   # Project guidelines for AI agents and humans
@@ -203,7 +203,7 @@ task test_cov
 
 ## AI Agent Dev Container
 
-The Dev Container also serves as the runtime for AI coding agents (Claude Code, Codex, etc.) — toolchain, authentication, host config inheritance, isolation modes, and scoped GitHub PAT setup are documented in [`.devcontainer/README.md`](.devcontainer/README.md).
+The Dev Container also serves as the runtime for AI coding agents (Claude Code, Codex, etc.) — setup and authentication are in [`.devcontainer/README.md`](.devcontainer/README.md); the mechanics behind it (host config inheritance, isolation modes and their limits, scoped GitHub PAT, task secrets) live in [`docs/knowledge/`](docs/knowledge/index.md).
 
 ## AI Agent Sandbox (Docker Sandboxes)
 
@@ -213,10 +213,11 @@ a microVM kernel boundary, deny-by-default networking, and secrets that never en
 It coexists with the Dev Container and is launched from the host, e.g.:
 
 ```bash
-sbx create --name claude-auto-<dir> --clone --kit ./.sandbox/kit claude .
-sbx exec -it -w "$PWD" claude-auto-<dir> claude --permission-mode auto
+sbx create --clone --kit ./.sandbox/kit claude .
+sbx exec -it -w "$PWD" claude-<dir> claude --permission-mode auto
 ```
 
 `sbx` runs on the host OS and cannot be used from inside the Dev Container.
-See [`.sandbox/README.md`](.sandbox/README.md) for setup, the reason `--clone` is
-mandatory, network policy auditing, task secrets, and the host trial checklist.
+See [`.sandbox/README.md`](.sandbox/README.md) for setup and for getting the work
+back to the host; [`docs/knowledge/runbooks/agent-sandbox-sbx.md`](docs/knowledge/runbooks/agent-sandbox-sbx.md)
+covers the mechanics (why `--clone` is mandatory, network policy, secrets, troubleshooting).

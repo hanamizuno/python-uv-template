@@ -46,7 +46,7 @@ The container compresses the blast radius from "everything the host user can tou
 * Granular network allow/deny lists (only the binary `--network=internal` mode above; a previous iptables-based allowlist was removed as hard to keep correct).
 * A nested Docker daemon for building/running containers from inside the agent session (the host socket is intentionally not mounted).
 
-For any of those, run the agent inside a higher-assurance sandbox such as [Docker Sandbox](https://docs.docker.com/ai/sandboxes/) (microVM kernel boundary, allow/deny networking, per-sandbox Docker daemon) and treat this devcontainer as the inner workspace. This repository ships Docker Sandboxes (`sbx`) kits for exactly that in `.sandbox/` — see [sbx-agent-sandbox.md](/docs/knowledge/architecture/sbx-agent-sandbox.md) and [ADR-0002](/docs/knowledge/adr/0002-coexist-sbx-with-devcontainer.md).
+For any of those, run the agent inside a higher-assurance sandbox such as [Docker Sandbox](https://docs.docker.com/ai/sandboxes/) (microVM kernel boundary, allow/deny networking, per-sandbox Docker daemon) and treat this devcontainer as the inner workspace. This repository ships Docker Sandboxes (`sbx`) kits for exactly that in `.sandbox/` — see [agent-sandbox-sbx.md](/docs/knowledge/runbooks/agent-sandbox-sbx.md) and [ADR-0002](/docs/knowledge/adr/0002-coexist-sbx-with-devcontainer.md).
 
 `host.docker.internal` is intentionally not added by default — opening it would expose every `0.0.0.0`-bound host service (local LLM servers, dev DBs, debug dashboards) to the agent. Add it as a local override only when specifically needed:
 

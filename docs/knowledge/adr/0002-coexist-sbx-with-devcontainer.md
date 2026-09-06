@@ -14,7 +14,7 @@ Accepted — 2026-09-05
 
 ## Context
 
-The Dev Container ([devcontainer-agent-runtime.md](/docs/knowledge/architecture/devcontainer-agent-runtime.md)) is a Linux container: no separate kernel, no granular network allow/deny, no nested Docker for the agent. [sbx](/docs/knowledge/architecture/sbx-agent-sandbox.md) (Docker Sandboxes) closes those gaps with a microVM boundary, deny-by-default networking, and credential injection that keeps real secrets out of the VM entirely. Nothing in this Python/uv kit has been run on real hardware yet — see [sbx-known-and-unverified.md](/docs/knowledge/research/sbx-known-and-unverified.md) — only a sibling pnpm template's equivalent setup has been hardware-verified.
+The Dev Container ([devcontainer-agent-runtime.md](/docs/knowledge/architecture/devcontainer-agent-runtime.md)) is a Linux container: no separate kernel, no granular network allow/deny, no nested Docker for the agent. [sbx](/docs/knowledge/runbooks/agent-sandbox-sbx.md) (Docker Sandboxes) closes those gaps with a microVM boundary, deny-by-default networking, and credential injection that keeps real secrets out of the VM entirely. Nothing in this Python/uv kit has been run on real hardware yet — see [sbx-verification.md](/docs/knowledge/research/sbx-verification.md) — only a sibling pnpm template's equivalent setup has been hardware-verified.
 
 ## Decision
 
