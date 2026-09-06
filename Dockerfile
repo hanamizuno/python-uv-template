@@ -53,10 +53,12 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 ENV PATH="/app/.venv/bin:$PATH"
 
-# Run as a non-root user; /app stays root-owned (read-only for the app)
-RUN groupadd --system app \
-  && useradd --system --gid app --home-dir /app --no-create-home app
-USER app
+# Run as a non-root user; /app stays root-owned (read-only for the app).
+# The uid/gid are fixed and USER is numeric so the id stays resolvable outside the
+# image (host bind mounts, Kubernetes runAsNonRoot, ...) — hadolint DL3066.
+RUN groupadd --gid 10001 app \
+  && useradd --uid 10001 --gid 10001 --home-dir /app --no-create-home app
+USER 10001:10001
 
 ENTRYPOINT []
 
