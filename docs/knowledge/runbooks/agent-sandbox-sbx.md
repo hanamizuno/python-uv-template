@@ -153,7 +153,7 @@ git fetch https://github.com/<org>/<repo>.git 'refs/heads/<branch>:refs/remotes/
 
 ## First-run checklist
 
-Nothing in this Python/uv kit has been run on hardware yet ([sbx-verification.md](/docs/knowledge/research/sbx-verification.md)). When trying it:
+The in-VM half of this list has been run ([sbx-verification.md](/docs/knowledge/research/sbx-verification.md)); steps 1 and 3 are host-side and still open. When trying it:
 
 1. `sbx version`, `sbx login`, `sbx kit validate ./.sandbox/kit` (and both fork kits — this also resolves `extends:`).
 2. Create and launch per approach A; confirm subscription auth needs no re-login, `git remote -v` / `ls /run/sandbox/source` show clone mode, and `ps -eo args` shows no bypass flag.
