@@ -46,7 +46,7 @@ Update `spec.yaml` and this section as these are learned:
 2. ~~**Whether uv's managed CPython download passes the network policy.**~~ Resolved: `uv python install 3.14` fetched cpython-3.14.2 into `~/.local/share/uv/python/` during the kit install, so python-build-standalone is reachable under the allowlist as written.
 3. **Whether the sandbox template already ships `uv`** — still undecided: the binary sits at `/usr/local/bin/uv`, which is exactly the kit's own `UV_INSTALL_DIR`, so its presence proves nothing either way. The image does ship a system CPython 3.14.4 at `/usr/bin/python3.14`, but uv's managed 3.14.2 is what the project actually runs on.
 4. **Behavior on the codex template** — checks above only covered the claude template. If the codex template already seeds `~/.codex/config.toml`, `onlyIfMissing` means the kit's settings won't apply.
-5. **Whether secrets survive `sbx rm`** — unverified whether a sandbox-scoped secret persists after recreation. Re-check with `gh api user` after recreating.
+5. ~~**Whether secrets survive `sbx rm`.**~~ Resolved: they do not. A sandbox-scoped secret is removed along with the sandbox, so `sbx secret set <service> --sandbox <name>` has to be re-run after every recreate — including the recreate that picks up a kit change.
 6. **Approach B is unverified** (approach A is now verified both here and on the sibling template; B has never been run). Confirm `sbx kit validate` passes, both `--kit` args apply, `--dangerously-skip-permissions` is gone from launch args, and where the OAuth limitation actually shows up — always measure with `ps`, since `entrypoint`/`command` inheritance resolution isn't documented.
 
 ---

@@ -210,10 +210,11 @@ credentials:
         - domain: github.com
           header: Authorization
           format: "token %s"
-  # Template for a task API key. To use it, uncomment, run
-  # `sbx secret set example --sandbox <sandbox name>` on the host, and recreate
-  # the sandbox (this kit contains setup.files, so `sbx kit add` cannot apply
-  # it in place).
+  # Template for a task API key. To use it, uncomment, then recreate the
+  # sandbox (this kit contains setup.files, so `sbx kit add` cannot apply it in
+  # place), and only then run `sbx secret set example --sandbox <sandbox name>`
+  # on the host — a secret registered before the recreate is dropped along with
+  # the old sandbox.
   # - service: example
   #   apiKey:
   #     name: EXAMPLE_API_KEY

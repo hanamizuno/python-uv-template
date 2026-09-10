@@ -20,7 +20,8 @@ sbx exec -it -w "$PWD" claude-<dir> claude --permission-mode auto
 # Register a GitHub fine-grained PAT for this sandbox only (value entered interactively)
 sbx secret set github --sandbox claude-<dir>
 
-# List / stop / remove (rm wipes all in-VM state, unpushed commits included)
+# List / stop / remove (rm wipes all in-VM state, unpushed commits included,
+# and drops the sandbox's secrets — re-register them after recreating)
 sbx ls
 sbx stop <sandbox>
 sbx rm <sandbox>

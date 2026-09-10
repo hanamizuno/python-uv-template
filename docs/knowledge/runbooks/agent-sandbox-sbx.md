@@ -103,7 +103,7 @@ Some of what the Dev Container's `initialize.sh` handles comes for free (measure
 
 ## Task secrets and the network policy
 
-pass-cli is deliberately not carried over. Use `sbx secret set <service> --sandbox <name>` plus a `credentials` entry in the kit; the proxy injects the header only for the domains listed. Kit changes need a recreate; secret changes apply immediately, even while running. **Never use the global `-g` form** — it would spill into sandboxes for other repositories.
+pass-cli is deliberately not carried over. Use `sbx secret set <service> --sandbox <name>` plus a `credentials` entry in the kit; the proxy injects the header only for the domains listed. Kit changes need a recreate; secret changes apply immediately, even while running. A sandbox-scoped secret does **not** survive `sbx rm` (measured) — it goes with the sandbox, so re-register it after every recreate, the ones you do to pick up a kit change included. **Never use the global `-g` form** — it would spill into sandboxes for other repositories.
 
 | | pass-cli (Dev Container) | sbx credential injection |
 |---|---|---|
