@@ -17,7 +17,8 @@
 # OAuth, so `sbx secret set anthropic` (an API key) is required on the host
 # before the first launch. To keep subscription authentication, use the other
 # approach instead — create the sandbox and launch it with `sbx exec`
-# (approach A in ../README.md "Overriding the YOLO defaults").
+# (approach A in ../../docs/knowledge/runbooks/agent-sandbox-sbx.md
+# "Overriding the built-in YOLO launch commands").
 #
 # Schema: https://docs.docker.com/ai/sandboxes/customize/kit-reference/
 schemaVersion: "2"

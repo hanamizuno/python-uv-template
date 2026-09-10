@@ -18,8 +18,9 @@
 # OAuth, so you register an API key with `sbx secret set openai` on the host
 # before launching rather than using ChatGPT subscription authentication. To
 # keep subscription authentication, use the other approach instead — create
-# the sandbox and launch it with `sbx exec` (approach A in ../README.md
-# "Overriding the YOLO defaults").
+# the sandbox and launch it with `sbx exec` (approach A in
+# ../../docs/knowledge/runbooks/agent-sandbox-sbx.md "Overriding the
+# built-in YOLO launch commands").
 #
 # Schema: https://docs.docker.com/ai/sandboxes/customize/kit-reference/
 schemaVersion: "2"
