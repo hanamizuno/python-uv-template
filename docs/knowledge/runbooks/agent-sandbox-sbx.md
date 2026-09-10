@@ -136,11 +136,24 @@ sbx ls && sbx login
 
 Delete only the `-auth` side, never the sandbox data itself.
 
+**`git push` fails with `Permission denied (publickey)`:** the clone inherits the host's remote URLs, and no SSH key is carried into the VM, so an `origin` of `git@github.com:<org>/<repo>.git` cannot authenticate. Proxy credential injection is HTTPS-only — the kit's `credentials` entry adds an `Authorization` header for `github.com`/`api.github.com`, which an SSH connection never sees. Push over HTTPS instead (measured 2026-09-10 on the claude template: the HTTPS push succeeds with no secret inside the VM):
+
+```bash
+git push https://github.com/<org>/<repo>.git <branch>
+git remote set-url origin https://github.com/<org>/<repo>.git   # or fix it for the session
+```
+
+`git fetch origin` uses the same SSH URL, so remote-tracking refs also go stale after such a push and the branch keeps reporting "ahead 1". Refresh with an explicit refspec if you leave `origin` on SSH:
+
+```bash
+git fetch https://github.com/<org>/<repo>.git 'refs/heads/<branch>:refs/remotes/origin/<branch>'
+```
+
 **SSH / headless sessions:** credentials live in the OS keychain, which stays locked with no way to prompt, so `sbx login` fails ([docker/sbx-releases#180](https://github.com/docker/sbx-releases/issues/180) / [#186](https://github.com/docker/sbx-releases/issues/186)). Over SSH to macOS, run `security unlock-keychain ~/Library/Keychains/login.keychain-db` in the same shell first, or do `sbx login` once from a local GUI session. On headless Linux, run a session D-Bus plus `gnome-keyring-daemon --components=secrets` with `DBUS_SESSION_BUS_ADDRESS` inherited by both `sbx` and the daemon. sbx changes auth handling often — update before digging in.
 
 ## First-run checklist
 
-Nothing in this Python/uv kit has been run on hardware yet ([sbx-verification.md](/docs/knowledge/research/sbx-verification.md)). When trying it:
+The in-VM half of this list has been run ([sbx-verification.md](/docs/knowledge/research/sbx-verification.md)); steps 1 and 3 are host-side and still open. When trying it:
 
 1. `sbx version`, `sbx login`, `sbx kit validate ./.sandbox/kit` (and both fork kits — this also resolves `extends:`).
 2. Create and launch per approach A; confirm subscription auth needs no re-login, `git remote -v` / `ls /run/sandbox/source` show clone mode, and `ps -eo args` shows no bypass flag.

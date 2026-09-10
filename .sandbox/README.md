@@ -3,7 +3,7 @@
 Kits for running agents inside a microVM with [Docker Sandboxes](https://docs.docker.com/ai/sandboxes/) (`sbx`).
 
 - `kit/` — shared mixin (uv + Python 3.14 + prek + Codex CLI + network / credential rules)
-- `claude-auto/` / `codex-approve/` — fork kits that replace the default YOLO launch commands
+- `claude-auto/` / `codex-approve/` — fork kits that replace the default YOLO launch commands. A fallback, not the normal path: the Usage below is what this repository uses, and a fork kit gives up proxy-managed OAuth (API key required) — see the runbook's "Approach B".
 
 ## Usage
 

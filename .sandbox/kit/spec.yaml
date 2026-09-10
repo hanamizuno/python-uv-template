@@ -1,30 +1,33 @@
 # Shared mixin kit for Docker Sandboxes (sbx).
+# Background and mechanics live in the runbook,
+# ../../docs/knowledge/runbooks/agent-sandbox-sbx.md ("the runbook" below).
 # Apply it from this repository's checkout directory (on the host). --clone is
-# mandatory — see ../README.md "Running in clone mode":
-#   sbx create --name claude-auto-<dir> --clone --kit ./.sandbox/kit claude .
+# mandatory — see the runbook's "Clone mode":
+#   sbx create --clone --kit ./.sandbox/kit claude .
 #
 # claude / codex ship with YOLO default launch commands, so overriding them
 # takes an extra step. A mixin cannot carry a `sandbox:` block (= entrypoint /
 # command), so this kit alone cannot override them. There are two approaches:
 #   A) Create the sandbox only, then exec with the flags you want (keeps
 #      subscription auth):
-#        sbx create --name claude-auto-<dir> --clone --kit ./.sandbox/kit claude .
-#        sbx exec -it -w "$PWD" claude-auto-<dir> claude --permission-mode auto
+#        sbx create --clone --kit ./.sandbox/kit claude .
+#        sbx exec -it -w "$PWD" claude-<dir> claude --permission-mode auto
 #   B) Layer a fork kit that replaces the launch command (no OAuth; needs an
 #      API key):
 #        sbx run claude-auto   --clone --kit ./.sandbox/kit --kit ./.sandbox/claude-auto
 #        sbx run codex-approve --clone --kit ./.sandbox/kit --kit ./.sandbox/codex-approve
-# See ../README.md "Overriding the YOLO defaults".
+# See the runbook's "Overriding the built-in YOLO launch commands".
 #
 # There is deliberately no per-agent kit: agent-specific setup (the Codex
 # config seed, the Codex plugin registration for Claude Code) is guarded so it
 # stays harmless in a sandbox built from a different agent template — the
 # config is never read, the registration is skipped. The claude sandbox also
 # gets the Codex CLI so Claude Code can orchestrate delegated runs
-# (see ../README.md "Orchestration").
+# (see the runbook's "Orchestration (delegating to Codex)").
 #
 # Schema: https://docs.docker.com/ai/sandboxes/customize/kit-reference/
-# Host verification steps and known-unverified items live in ../README.md.
+# Host verification steps and known-unverified items live in
+# ../../docs/knowledge/research/sbx-verification.md.
 schemaVersion: "2"
 kind: mixin
 name: python-uv-agent-env
@@ -119,7 +122,8 @@ setup:
     # seeded one. ${WORKDIR} expands to the workspace's absolute path at
     # sandbox creation (in clone mode, the path of the clone inside the VM).
     # Kept aligned with .devcontainer/codex-config.toml except for the
-    # approval policy — see ../README.md "How this relates to the config files".
+    # approval policy — see the closing paragraph of the runbook's
+    # "Overriding the built-in YOLO launch commands".
     - path: /home/agent/.codex/config.toml
       onlyIfMissing: true
       content: |
@@ -149,7 +153,7 @@ permissions:
     # repository's work needs). This *adds* to the default policy — it does not
     # trim the default's broad wildcards. Inspecting and narrowing the
     # effective policy is a host-side operation
-    # (see ../README.md "Auditing the network policy").
+    # (see the runbook's "Task secrets and the network policy").
     allow:
       # apt
       - deb.debian.org
