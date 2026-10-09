@@ -99,7 +99,7 @@ Some of what the Dev Container's `initialize.sh` handles comes for free (measure
 - **git identity** — `user.name`/`user.email` already hold the host's values.
 - **Global gitignore** — placed as `core.excludesFile` = `/home/agent/.gitignore_global`.
 - **`~/.claude/skills`** — a read-write virtiofs bind mount from the host, so agent changes are reflected back on the host.
-- The host's `~/.claude/settings.json` is **not** inherited — use the kit's `setup.files` or `sbx cp` for host-specific settings.
+- The host's `~/.claude/settings.json` is **not** inherited. Don't write or merge into the VM's `~/.claude/settings.json` either: the kit reference lists it (and `~/.claude.json`, `~/.claude/.config.json`, and the codex template's `~/.codex/config.toml`) as sandbox-managed — later setup may replace kit content there. Instead, [`.sandbox/stage-host-claude.sh`](/.sandbox/stage-host-claude.sh) (opt-in, host side) copies the host settings into the kit's static files as `~/.claude/host-settings.json` plus `statusline-command.sh`, and the launch adds `--settings /home/agent/.claude/host-settings.json`. Note that `--settings` outranks the project's `.claude/settings.json`, unlike the Dev Container's merge into user settings; the `--permission-mode` flag still wins over either.
 
 ## Task secrets and the network policy
 
