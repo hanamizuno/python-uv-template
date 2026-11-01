@@ -65,7 +65,7 @@ ENTRYPOINT []
 CMD ["python", "--version"]
 
 # ===== Stage 3: devcontainer =====
-FROM mcr.microsoft.com/vscode/devcontainers/base:bookworm@sha256:3aacff4130e6cf04709f9cab1d7a6d3e1cc4bff6202bc61611831a18d3755673 AS devcontainer
+FROM mcr.microsoft.com/vscode/devcontainers/base:bookworm@sha256:99f5250dd2d5f8b11046d5662dd94c1e3c1dae56b560c7caad5ceb7edf349046 AS devcontainer
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
