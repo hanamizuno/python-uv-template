@@ -56,4 +56,5 @@ Setup is automatic in the Dev Container (post-create). Elsewhere, [install prek]
 - Never read, print, or copy `~/.local/state/proton-pass-agent/pat` — you never need the token value itself; `pass-relogin` handles it.
 - Pin dependencies via `uv.lock`; update with care (`uv sync --upgrade`).
 - CI (`.github/workflows/ci.yml`) runs lint, type check, and tests in a single job; keep the pipeline green before merging.
+- After adding a workflow or changing any `uses:` line, run `gh actions-lock` (extension: `gh extension install github/gh-actions-lock`) and commit the updated `.github/workflows/actions.lock`; never edit it by hand. Without a matching entry, the runner refuses the action.
 
