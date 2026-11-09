@@ -29,6 +29,19 @@ sbx rm <sandbox>
 
 After changing a kit, `sbx rm` and recreate to pick it up.
 
+### Optional: bring your host Claude Code settings
+
+Opt-in. Stage `~/.claude/settings.json` (host-home paths rewritten) and `statusline-command.sh` into the kit before creating, then add `--settings` at launch:
+
+```bash
+./.sandbox/stage-host-claude.sh
+sbx create --clone --kit ./.sandbox/kit claude .
+sbx exec -it -w "$PWD" claude-<dir> claude --permission-mode auto \
+  --settings /home/agent/.claude/host-settings.json
+```
+
+To stop: `./.sandbox/stage-host-claude.sh --remove`, recreate, and drop `--settings`. The staged files are gitignored. Why a separate file instead of merging: [runbook](../docs/knowledge/runbooks/agent-sandbox-sbx.md#what-sbx-inherits-automatically).
+
 ## Getting the work back to the host
 
 The sandbox exposes its clone as a `sandbox-<sandbox>` remote while it is running.

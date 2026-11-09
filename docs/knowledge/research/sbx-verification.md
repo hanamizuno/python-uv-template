@@ -48,6 +48,7 @@ Update `spec.yaml` and this section as these are learned:
 4. **Behavior on the codex template** — checks above only covered the claude template. If the codex template already seeds `~/.codex/config.toml`, `onlyIfMissing` means the kit's settings won't apply.
 5. ~~**Whether secrets survive `sbx rm`.**~~ Resolved: they do not. A sandbox-scoped secret is removed along with the sandbox, so `sbx secret set <service> --sandbox <name>` has to be re-run after every recreate — including the recreate that picks up a kit change.
 6. **Approach B is unverified** (approach A is now verified both here and on the sibling template; B has never been run). Confirm `sbx kit validate` passes, both `--kit` args apply, `--dangerously-skip-permissions` is gone from launch args, and where the OAuth limitation actually shows up — always measure with `ps`, since `entrypoint`/`command` inheritance resolution isn't documented.
+7. **Host Claude settings staging** ([`.sandbox/stage-host-claude.sh`](/.sandbox/stage-host-claude.sh)) — confirm sbx copies the gitignored `files/home/.claude/` into the VM, and that `--settings /home/agent/.claude/host-settings.json` applies (e.g. the statusline shows).
 
 ---
 
