@@ -8,7 +8,7 @@ workflows:
         - 'actions/github-script@v9.0.0'
         - 'actions/setup-python@v7.1.0'
         - 'actions/upload-artifact@v7.0.2'
-        - 'astral-sh/setup-uv@v10.2.0'
+        - 'astral-sh/setup-uv@v10.3.3'
     '.github/workflows/label_pr.yml':
         - 'actions/labeler@v7.0.0'
     '.github/workflows/labels.yml':
@@ -18,12 +18,12 @@ workflows:
         - 'hadolint/hadolint-action@v3.5.0'
     '.github/workflows/lint_gha.yml':
         - 'actions/checkout@v7.0.1'
-        - 'astral-sh/setup-uv@v10.2.0'
+        - 'astral-sh/setup-uv@v10.3.3'
     '.github/workflows/sbom.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/setup-python@v7.1.0'
         - 'actions/upload-artifact@v7.0.2'
-        - 'astral-sh/setup-uv@v10.2.0'
+        - 'astral-sh/setup-uv@v10.3.3'
     '.github/workflows/security.yml':
         - 'actions/checkout@v7.0.1'
         - 'aquasecurity/trivy-action@v0.36.0'
@@ -87,9 +87,9 @@ dependencies:
         uses:
             - 'actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae'
             - 'aquasecurity/setup-trivy@3fb12ec12f41e471780db15c232d5dd185dcb514'
-    'astral-sh/setup-uv@v10.2.0':
-        ref: 'v10.2.0'
-        commit: 'sha1-c18668ad3cf93ea998bef934396af7bb5c839dc7'
+    'astral-sh/setup-uv@v10.3.3':
+        ref: 'v10.3.3'
+        commit: 'sha1-68559e99cc807c1eb7e9238fd43a15bba460eec2'
         owner_id: 115962839
         repo_id: 846733598
     'github/codeql-action@v4.38.2':
