@@ -1,0 +1,31 @@
+# Docker Sandboxes environment file: Claude Code in auto permission mode.
+#
+# The built-in claude kit launches `claude --dangerously-skip-permissions` by
+# default (= permission checks skipped entirely). `sbx run claude -- <args>`
+# only *appends* after the default flags and cannot cancel them, and v3 kits
+# have no fork (`extends`), so this file's entrypoint / cmd replace the launch
+# command of `sbx env run` outright.
+#
+# Usage (on the host, from the repository's checkout):
+#   sbx env run ./.sandbox/claude-auto
+#
+# The override applies to `sbx env run` only. `sbx run` / `sbx env exec`
+# start the default YOLO launch, so reconnect with `sbx env run` too.
+# See ../../docs/knowledge/runbooks/agent-sandbox-sbx.md
+# "Overriding the built-in YOLO launch commands".
+#
+# No `name:` — the sandbox is named `claude-<checkout directory name>`, so
+# every checkout of a project generated from this template gets its own.
+schemaVersion: "1"
+agent: claude
+kits:
+  - ../kit
+workspace:
+  # Resolved from this file's directory (= the repository root).
+  path: ../..
+  # Mandatory — see the runbook's "Clone mode".
+  clone: true
+# Declare both entrypoint and cmd so nothing of the built-in default (the
+# bypass flag) is inherited.
+entrypoint: [claude]
+cmd: [--permission-mode, auto]

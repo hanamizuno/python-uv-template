@@ -26,3 +26,9 @@ heading (`## YYYY-MM-DD`). Keep each bullet terse and link to the concrete file.
   * [runbooks/agent-sandbox-sbx.md](/docs/knowledge/runbooks/agent-sandbox-sbx.md) — YOLO override, clone mode, mounting, secrets, orchestration, auth troubleshooting, first-run checklist.
   * [research/sbx-verification.md](/docs/knowledge/research/sbx-verification.md) — verified-elsewhere vs. unverified-here facts.
   * [adr/0002-coexist-sbx-with-devcontainer.md](/docs/knowledge/adr/0002-coexist-sbx-with-devcontainer.md) — the coexistence decision and Dev Container retirement criteria.
+
+## 2026-11-09
+
+* **Updated for sbx v0.51.0 / kit spec v3**: the built-in agents became v3 kits that cannot compose with v2 kits.
+  * [runbooks/agent-sandbox-sbx.md](/docs/knowledge/runbooks/agent-sandbox-sbx.md) — launch via environment files (`sbx env run`) instead of `sbx create` + `sbx exec`; fork kits retired; v2 → v3 field mapping; host settings now copied by a postCreate overlay.
+  * [research/sbx-verification.md](/docs/knowledge/research/sbx-verification.md) — replaced with v0.51.0 measurements (uv page-size crash and workaround, codex kit's own seed, secrets after creation, read-only skills, no git identity).

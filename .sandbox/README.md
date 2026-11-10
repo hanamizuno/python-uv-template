@@ -1,46 +1,50 @@
 # .sandbox
 
-Kits for running agents inside a microVM with [Docker Sandboxes](https://docs.docker.com/ai/sandboxes/) (`sbx`).
+Kits for running agents inside a microVM with [Docker Sandboxes](https://docs.docker.com/ai/sandboxes/) (`sbx`), written to [kit spec v3](https://github.com/docker/sandbox-kit-spec/blob/main/docs/spec/SPEC-v3.md) (sbx v0.51.0+).
 
 - `kit/` — shared mixin (uv + Python 3.14 + prek + Codex CLI + network / credential rules)
-- `claude-auto/` / `codex-approve/` — fork kits that replace the default YOLO launch commands. A fallback, not the normal path: the Usage below is what this repository uses, and a fork kit gives up proxy-managed OAuth (API key required) — see the runbook's "Approach B".
+- `claude-auto/` / `codex-approve/` — [environment files](https://docs.docker.com/ai/sandboxes/configuration/environment-files/) (`sbxenv.yaml`): agent + kit + clone mode, with the built-in YOLO launch command replaced
+- `host-claude/` + `stage-host-claude.sh` — opt-in overlay that brings your host Claude Code settings
 
 ## Usage
 
-**Run on the host** (not available from inside the devcontainer). Sandbox names are listed by `sbx ls`.
+**Run on the host** (not available from inside the devcontainer). Sandboxes are named `claude-<dir>` / `codex-<dir>` after the checkout directory (`sbx ls`).
 
 ```bash
-# Create the sandbox (--clone is mandatory; the agent is not launched yet)
-sbx create --clone --kit ./.sandbox/kit claude .
+# Preview what gets created (sandbox, kit, git remote, launch command)
+sbx env plan ./.sandbox/claude-auto
 
-# Launch (entering with `sbx run` would start the default YOLO entrypoint,
-# so always enter this way)
-sbx exec -it -w "$PWD" claude-<dir> claude --permission-mode auto
+# Create on first run, then attach; later runs re-attach (asks for approval once).
+# Always enter this way — `sbx run` / `sbx env exec` start the default YOLO launch.
+sbx env run ./.sandbox/claude-auto
 
-# Register a GitHub fine-grained PAT for this sandbox only (value entered interactively)
+# Register a GitHub fine-grained PAT for this sandbox only (value entered interactively;
+# takes effect immediately, no recreate needed)
 sbx secret set github --sandbox claude-<dir>
 
-# List / stop / remove (rm wipes all in-VM state, unpushed commits included,
-# and drops the sandbox's secrets — re-register them after recreating)
+# Codex works the same way
+sbx env run ./.sandbox/codex-approve
+
+# List / stop / remove (env rm wipes all in-VM state, unpushed commits included,
+# plus the sandbox's secrets and its sandbox-<name> git remote)
 sbx ls
-sbx stop <sandbox>
-sbx rm <sandbox>
+sbx stop claude-<dir>
+sbx env rm ./.sandbox/claude-auto
 ```
 
-After changing a kit, `sbx rm` and recreate to pick it up.
+Arguments after `--` **replace** the launch arguments, so restate the permission flag: `sbx env run ./.sandbox/claude-auto -- --permission-mode auto --continue`.
+
+After changing a kit, `sbx env rm` and run again to pick it up.
 
 ### Optional: bring your host Claude Code settings
 
-Opt-in. Stage `~/.claude/settings.json` (host-home paths rewritten) and `statusline-command.sh` into the kit before creating, then add `--settings` at launch:
+Opt-in. Layer the `host-claude` overlay on top: at creation it copies `~/.claude/settings.json` (host-home paths rewritten) and `statusline-command.sh` into the sandbox with `sbx cp`, and launches Claude Code with `--settings` pointing at the copy.
 
 ```bash
-./.sandbox/stage-host-claude.sh
-sbx create --clone --kit ./.sandbox/kit claude .
-sbx exec -it -w "$PWD" claude-<dir> claude --permission-mode auto \
-  --settings /home/agent/.claude/host-settings.json
+sbx env run ./.sandbox/claude-auto ./.sandbox/host-claude
 ```
 
-To stop: `./.sandbox/stage-host-claude.sh --remove`, recreate, and drop `--settings`. The staged files are gitignored. Why a separate file instead of merging: [runbook](../docs/knowledge/runbooks/agent-sandbox-sbx.md#what-sbx-inherits-automatically).
+Pass both paths on every run (the overlay is what adds `--settings`). To pick up host changes, `sbx env rm` and run again. To stop, drop the overlay and recreate. Why a separate file instead of merging: [runbook](../docs/knowledge/runbooks/agent-sandbox-sbx.md#what-sbx-inherits-automatically).
 
 ## Getting the work back to the host
 

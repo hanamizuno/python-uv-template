@@ -1,0 +1,37 @@
+# Docker Sandboxes environment file: Codex in approve-for-me mode.
+#
+# The built-in codex kit launches
+# `codex --dangerously-bypass-approvals-and-sandbox` by default (= neither
+# approvals nor a sandbox). `sbx run codex -- <args>` only *appends* after the
+# default flags and cannot cancel them, and v3 kits have no fork (`extends`),
+# so this file's entrypoint / cmd replace the launch command of `sbx env run`
+# outright.
+#
+# Usage (on the host, from the repository's checkout):
+#   sbx env run ./.sandbox/codex-approve
+#
+# The override applies to `sbx env run` only. `sbx run` / `sbx env exec`
+# start the default YOLO launch, so reconnect with `sbx env run` too.
+# See ../../docs/knowledge/runbooks/agent-sandbox-sbx.md
+# "Overriding the built-in YOLO launch commands".
+#
+# --approve-for-me keeps the workspace-write sandbox while routing escalated
+# approval requests to an automatic review instead of a human. The built-in
+# codex kit seeds its own ~/.codex/config.toml (approval_policy = "never",
+# sandbox_mode = "danger-full-access"), so the shared mixin's seed is skipped
+# here and this launch flag is the only guard.
+#
+# No `name:` — the sandbox is named `codex-<checkout directory name>`.
+schemaVersion: "1"
+agent: codex
+kits:
+  - ../kit
+workspace:
+  # Resolved from this file's directory (= the repository root).
+  path: ../..
+  # Mandatory — see the runbook's "Clone mode".
+  clone: true
+# Declare both entrypoint and cmd so nothing of the built-in default (the
+# bypass flag) is inherited.
+entrypoint: [codex]
+cmd: [--approve-for-me]

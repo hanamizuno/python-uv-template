@@ -12,5 +12,5 @@ Snapshots of deep-research output, manual investigations, and comparative analys
 
 ## Index
 
-* [sbx-verification.md](sbx-verification.md) — sbx facts carried over from a sibling template vs. what's unverified for this Python/uv kit.
+* [sbx-verification.md](sbx-verification.md) — What was measured for the kit spec v3 kit and environment files on sbx v0.51.0, and what's still unverified.
 * [sample-research.md](sample-research.md) — Sample. Replace with a real research note (or delete) once you have one.

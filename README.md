@@ -215,11 +215,11 @@ a microVM kernel boundary, deny-by-default networking, and secrets that never en
 It coexists with the Dev Container and is launched from the host, e.g.:
 
 ```bash
-sbx create --clone --kit ./.sandbox/kit claude .
-sbx exec -it -w "$PWD" claude-<dir> claude --permission-mode auto
+sbx env run ./.sandbox/claude-auto     # Claude Code in auto permission mode
+sbx env run ./.sandbox/codex-approve   # Codex in approve-for-me mode
 ```
 
 `sbx` runs on the host OS and cannot be used from inside the Dev Container.
 See [`.sandbox/README.md`](.sandbox/README.md) for setup and for getting the work
 back to the host; [`docs/knowledge/runbooks/agent-sandbox-sbx.md`](docs/knowledge/runbooks/agent-sandbox-sbx.md)
-covers the mechanics (why `--clone` is mandatory, network policy, secrets, troubleshooting).
+covers the mechanics (environment files and kit spec v3, why clone mode is mandatory, network policy, secrets, troubleshooting).

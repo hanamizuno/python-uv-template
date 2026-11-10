@@ -1,55 +1,49 @@
 ---
 type: Reference
 title: sbx — known and unverified facts for this template
-description: Environment facts inherited from the sibling pnpm-biome-template's hardware verification, what this repository's own sandbox has measured, and what is still unverified
+description: What has been measured for this repository's kit spec v3 kit and environment files on sbx v0.51.0, what carried over from the v2 era, and what is still unverified
 tags: [sbx, agents]
-timestamp: 2026-09-05T00:00:00Z
+timestamp: 2026-11-09T00:00:00Z
 ---
 
 # sbx — known and unverified facts for this template
 
-The `spec.yaml` files follow the [kit spec reference](https://docs.docker.com/ai/sandboxes/customize/kit-reference/).
+The kit follows [kit spec v3](https://github.com/docker/sandbox-kit-spec/blob/main/docs/spec/SPEC-v3.md); the launchers are [environment files](https://docs.docker.com/ai/sandboxes/configuration/environment-files/). Mechanics: [agent-sandbox-sbx.md](/docs/knowledge/runbooks/agent-sandbox-sbx.md).
 
-## Inherited from the sibling pnpm-biome-template (verified on hardware there)
+## Measured on sbx v0.51.0 (2026-11-09, macOS / Apple Silicon)
 
-Verified on the claude template (`docker/sandbox-templates:claude-code-docker`). These are facts about sbx itself, so they should carry over, but have **not** been re-measured for this Python/uv kit:
+Throwaway sandboxes created with `sbx env create` from this repository's environment files, then removed.
 
-* Base is Ubuntu 26.04/arm64, bundled Node v22, `~/.codex` starts empty (so the config seed takes effect), the agent user has passwordless sudo and is in the docker group, and Docker inside the VM is 29.7.1.
-* `${WORKDIR}` in `~/.codex/config.toml` expands to the workspace's absolute path; in clone mode this mirrors the host's path, matching direct mode. The template's own `/home/agent/workspace` is left as an unused empty directory.
-* `git push` over HTTPS works via header injection (`format: "token %s"`) — both `gh api user` and `git push` succeed; no need to fall back to pushing from the host.
-* Deny-by-default networking is in effect (domains outside the allowlist return 403 `no matching allow rule`). `GH_TOKEN` holds a 13-character sentinel (`proxy-managed`); the real value is not in the VM.
-* Built-in agent auth is proxy-managed: `claudeAiOauth.accessToken`/`refreshToken` in `~/.claude/.credentials.json` are 26-character sentinels — real OAuth tokens don't enter the VM.
-* The built-in claude template's default launch command is `claude --dangerously-skip-permissions` (measured with `ps`); a shared mixin can't override it (no `sandbox:` block).
-* Approach A ([agent-sandbox-sbx.md](/docs/knowledge/runbooks/agent-sandbox-sbx.md)) was verified there: `sbx create` completes the kit install without launching the agent, `sbx exec` shows `claude --permission-mode auto` in `ps` with no bypass flag, and subscription auth survives with no re-login.
-* The default policy does not allow `console.anthropic.com`/`claude.ai` (measured: 403) — the kit adds them.
-* `pkill -f <pattern>` inside the VM kills your own shell too, because the full command line matches — `agentInstructions` says to kill by PID instead.
-* `claude mcp add` defaults to `local` scope (per-cwd); since an install step's cwd isn't necessarily the workspace, a default-scope registration won't show in `claude mcp list`. This kit registers no MCP servers, but use `-s user` if one is added later.
-* `claude mcp list` shows an `mcp-gateway` entry (`http://mcp-gateway.docker.internal/mcp`) from sbx itself, not from any kit, with a warning that claude.ai connectors are disabled because "another auth source is set" — that's the proxy-managed credential. Only claude.ai organization connectors are affected; Claude Code itself is unaffected.
+* **`sbx kit validate ./.sandbox/kit` passes** and `sbx env plan` resolves both environment files (and the `host-claude` overlay merged on top: `cmd` replaced, postCreate added).
+* **The base is different from v2.** The built-in claude/codex kits run on Docker Hardened Images (Debian 13, aarch64) with **16K memory pages**. `~/.local/bin` is already on PATH; there is no Node/npm.
+* **The image's `/usr/bin/uv` (Debian package 0.13.7) aborts** with `<jemalloc>: Unsupported system page size`. The official astral build of the same version runs, so the kit installs it into `/usr/local/bin`. Root hooks search `/usr/bin` first, so the hook checks `/usr/local/bin/uv` by absolute path; the agent's PATH has `/usr/local/bin` first.
+* **Every install hook succeeds** on both the claude and codex kits: uv, `uv python install 3.14` (cpython-3.14.10 into `~/.local/share/uv/python/`, so python-build-standalone is reachable through `install.allow`), prek, Node 24 from NodeSource, Codex CLI 0.149.1, the `codex@openai-codex` plugin (1.0.6, user scope), and the Codex seed with `[projects."<host path>"]` from `WORKSPACE_DIR`.
+* **`uv sync --frozen` → `uv run task lint` → `uv run task test_cov` pass** in the VM (ruff and pyright clean; 3 tests, 100% coverage), and `prek install` installs the git hook.
+* **The launch override works.** Under `sbx env run`, `ps -eo args` shows `claude --permission-mode auto` (with the overlay: `… --settings /home/agent/.claude/host-settings.json`) and `codex --approve-for-me` — no bypass flag in either.
+* **The built-in codex kit seeds `~/.codex/config.toml` first** (`approval_policy = "never"`, `sandbox_mode = "danger-full-access"`), so the kit's seed is skipped there. `codex --help` documents `--approve-for-me` as "automatic review using the workspace-write sandbox", so the launch flag overrides both.
+* **The `host-claude` overlay works**: its postCreate runs `stage-host-claude.sh` on the host, and `sbx cp` lands `host-settings.json` (0644) and `statusline-command.sh` (0755) in `~/.claude/`, owned by the host uid.
+* **Network**: `example.com` gets a 403 with the body `Approval required for example.com:443.`; `pypi.org` is reachable. `GH_TOKEN` is the 13-character sentinel `proxy-managed` even with no secret registered.
+* **A secret registered after creation applies immediately.** With no secret, `api.github.com/user` answers "Requires authentication"; right after `sbx secret set github --sandbox <name>` (dummy token) it answers "Bad credentials" — the header is injected, with no restart. `sbx env rm` removes the sandbox's secrets and its `sandbox-<name>` git remote.
+* **Mounts**: `~/.claude/skills` is a read-only virtiofs mount. `additionalWorkspaces` with `readOnly: true` mounts at the host path and refuses writes; `~` in its `path` is *not* expanded (it resolves relative to the file).
+* **git identity is not inherited** (`user.name`/`user.email` unset; `core.excludesFile` is set).
+* **The built-in opencode kit cannot compose with this kit**: it uses `agent-context@1`, this kit `@2` (measured on the sibling pnpm-biome-template).
 
-## Measured in this repository's own sandbox (2026-09-10)
+## Carried over from the v2 era (not re-measured on v3)
 
-Read from inside `claude-python-uv-template`, a sandbox created from this kit on the claude template with approach A. This is the first hardware run of the Python/uv kit itself.
-
-* **Approach A works with this kit.** `ps -eo args` shows `claude --permission-mode auto` with no bypass flag, and the session runs with no login performed inside the VM. `/run/sandbox/source` is present and the workspace is a clone, as expected in clone mode.
-* **Every install step took effect.** uv 0.9.26 (`/usr/local/bin/uv`), `/etc/profile.d/10-uv-local-bin.sh`, prek 0.5.2 (`~/.local/bin/prek`), Codex CLI 0.149.1 at the npm global path (the pinned version, so the kit installed it), and the `codex@openai-codex` plugin registered at user scope and enabled.
-* **The base image matches the sibling's readings** — Ubuntu 26.04 LTS aarch64, bundled Node v22.22.1.
-* **`~/.codex/config.toml` is the kit's seed**, with `${WORKDIR}` expanded to the host path (`/Users/…/python-uv-template`) — so the claude template seeds no Codex config and `onlyIfMissing` does not shadow it.
-* **`uv sync --frozen` → `uv run task lint` → `uv run task test_cov` all pass** (ruff and pyright clean; 3 tests, 100% coverage) on the uv-managed CPython 3.14.2. `prek install` is genuinely needed first — the clone carries no git hook — and the `secretlint` hook then runs on commit.
-* **GitHub header injection works from the VM**: `git push` over HTTPS and `gh pr create` both succeed with no real token in the environment. The inherited `origin` is an SSH URL and fails — see the runbook's auth troubleshooting.
-* **`claude mcp list` differs from the sibling reading**: the `mcp-gateway` entry is present but fails with `HTTP 503: MCP gateway is not running for this sandbox`, and the claude.ai connectors (Gmail / Calendar / Drive) connect normally, with no "another auth source is set" warning. Nothing here depends on either.
+* `git push` over HTTPS works via header injection, and `gh pr create` succeeds; the inherited SSH `origin` fails (see the runbook's auth troubleshooting).
+* `pkill -f <pattern>` inside the VM kills your own shell, because the full command line matches.
+* `claude mcp add` defaults to `local` (per-cwd) scope, so an install hook must use `-s user` (this kit registers no MCP server; the sibling's does, and it works on v3).
+* Built-in agent auth is proxy-managed: OAuth tokens in `~/.claude/.credentials.json` are sentinels.
 
 ## Not yet verified for this repository
 
-Update `spec.yaml` and this section as these are learned:
+Update the kit and this section as these are learned:
 
-1. **The host-side half of the first-run checklist** — `sbx version` / `login` / `kit validate`, and `sbx secret ls` showing sandbox rather than global scope. Everything measurable from inside the VM is covered above. See the first-run checklist in [agent-sandbox-sbx.md](/docs/knowledge/runbooks/agent-sandbox-sbx.md).
-2. ~~**Whether uv's managed CPython download passes the network policy.**~~ Resolved: `uv python install 3.14` fetched cpython-3.14.2 into `~/.local/share/uv/python/` during the kit install, so python-build-standalone is reachable under the allowlist as written.
-3. **Whether the sandbox template already ships `uv`** — still undecided: the binary sits at `/usr/local/bin/uv`, which is exactly the kit's own `UV_INSTALL_DIR`, so its presence proves nothing either way. The image does ship a system CPython 3.14.4 at `/usr/bin/python3.14`, but uv's managed 3.14.2 is what the project actually runs on.
-4. **Behavior on the codex template** — checks above only covered the claude template. If the codex template already seeds `~/.codex/config.toml`, `onlyIfMissing` means the kit's settings won't apply.
-5. ~~**Whether secrets survive `sbx rm`.**~~ Resolved: they do not. A sandbox-scoped secret is removed along with the sandbox, so `sbx secret set <service> --sandbox <name>` has to be re-run after every recreate — including the recreate that picks up a kit change.
-6. **Approach B is unverified** (approach A is now verified both here and on the sibling template; B has never been run). Confirm `sbx kit validate` passes, both `--kit` args apply, `--dangerously-skip-permissions` is gone from launch args, and where the OAuth limitation actually shows up — always measure with `ps`, since `entrypoint`/`command` inheritance resolution isn't documented.
-7. **Host Claude settings staging** ([`.sandbox/stage-host-claude.sh`](/.sandbox/stage-host-claude.sh)) — confirm sbx copies the gitignored `files/home/.claude/` into the VM, and that `--settings /home/agent/.claude/host-settings.json` applies (e.g. the statusline shows).
+1. **Real GitHub round-trip on v3** — `gh api user` with a real PAT, and `git push` over HTTPS from the VM.
+2. **Subscription auth through `sbx env run`** — that Claude Max / ChatGPT sessions work with no re-login (the checks above stopped at the launch command).
+3. **Whether `--settings` applies the host statusline** under the overlay.
+4. **Inside the codex sandbox, Claude-less paths** — whether anything there starts `codex` without `--approve-for-me` (and so under the codex kit's YOLO seed).
 
 ---
 
-Last verified: 2026-09-10 (this repository's own sandbox); 2026-09-05 for the inherited section
+Last verified: 2026-11-09 (sbx v0.51.0)
