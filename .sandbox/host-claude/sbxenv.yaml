@@ -1,0 +1,26 @@
+# Opt-in overlay for ../claude-auto: bring the host's Claude Code settings.
+#
+# Layer it after the base environment file (later files deep-merge over
+# earlier ones):
+#   sbx env run ./.sandbox/claude-auto ./.sandbox/host-claude
+#
+# Kit spec v3 has no static `files/` directory, so instead a host-side
+# postCreate command (../stage-host-claude.sh) copies `~/.claude/settings.json`
+# (host-home paths rewritten) and `statusline-command.sh` into the new
+# sandbox with `sbx cp`. The VM's own ~/.claude/settings.json is
+# sandbox-managed, so the host settings land in a separate file that the
+# launch below loads with --settings. Auth/state (~/.claude.json,
+# credentials) is intentionally NOT copied.
+#
+# postCreate runs only when the sandbox is created, so pass this overlay on
+# every `sbx env run` (the cmd below is what adds --settings), and recreate
+# (`sbx env rm` + run) to pick up host changes.
+schemaVersion: "1"
+lifecycle:
+  postCreate:
+    - name: Copy host Claude Code settings into the sandbox
+      command: ../stage-host-claude.sh
+      workdir: ${{ env.fileDir }}
+# Replaces the base file's cmd (arrays are replaced, not concatenated), so the
+# permission mode is restated.
+cmd: [--permission-mode, auto, --settings, /home/agent/.claude/host-settings.json]
