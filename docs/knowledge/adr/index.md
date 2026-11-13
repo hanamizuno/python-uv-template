@@ -25,5 +25,6 @@ When the status of an ADR changes, update both the frontmatter `tags:` and the `
 
 ## Index
 
-* [0002-coexist-sbx-with-devcontainer.md](0002-coexist-sbx-with-devcontainer.md) — Run sbx alongside the Dev Container as a staged migration, and the criteria for retiring the latter's agent tooling.
+* [0003-retire-devcontainer.md](0003-retire-devcontainer.md) — Retire the Dev Container; sbx is the only agent runtime.
+* [0002-coexist-sbx-with-devcontainer.md](0002-coexist-sbx-with-devcontainer.md) — Superseded by ADR-0003. Run sbx alongside the Dev Container as a staged migration.
 * [0001-sample-decision.md](0001-sample-decision.md) — Sample. Replace with a real ADR (or delete) once you have one.

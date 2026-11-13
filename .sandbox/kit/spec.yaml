@@ -104,7 +104,7 @@ capabilities:
   # (-g), which would leak into sandboxes for other repositories. GH_TOKEN
   # inside the VM holds a sentinel value; the real value is only ever spliced
   # into the header by the proxy just before the request leaves — it never
-  # enters the VM. PAT scoping follows .devcontainer/README.md
+  # enters the VM. PAT scoping: docs/knowledge/runbooks/agent-sandbox-sbx.md
   # "Restricting GitHub permissions (PAT)". Every inject domain must also be
   # in the runtime allowlist above. Optional: the sandbox is created without
   # it, just without GitHub authentication.
@@ -186,9 +186,9 @@ capabilities:
             set -eu
             uv python install 3.14
 
-        # Same pre-commit hook runner the Dev Container uses
-        # (.devcontainer/post-create.sh). Registering the git hook needs the
-        # workspace as cwd, so `prek install` is left to the agent.
+        # Pre-commit hook runner for .pre-commit-config.yaml. Registering the
+        # git hook needs the workspace as cwd, so `prek install` is left to the
+        # agent.
         - description: prek (pre-commit hook runner)
           user: "1000"
           command: |
@@ -205,17 +205,16 @@ capabilities:
               apt-get install -y --no-install-recommends nodejs
             fi
 
-        # Version pinned for reproducibility and supply-chain hygiene (the
-        # Dev Container installs it unpinned; bump both together).
+        # Version pinned for reproducibility and supply-chain hygiene.
         - description: Codex CLI (skipped when the image already ships it)
           command: |
             set -eu
             command -v codex >/dev/null 2>&1 || npm install -g @openai/codex@0.149.1
 
         # Register Codex as a Claude Code plugin so Claude Code can delegate to
-        # Codex on demand (the codex-rescue subagent + /codex skills). Mirrors
-        # .devcontainer/post-create.sh. Skipped in sandboxes without claude,
-        # and skipped when already installed, so the step stays idempotent.
+        # Codex on demand (the codex-rescue subagent + /codex skills). Skipped
+        # in sandboxes without claude, and skipped when already installed, so
+        # the step stays idempotent.
         # Marketplace installs cannot pin a version, so this one always takes
         # the latest.
         - description: Codex plugin for Claude Code (claude sandboxes only)
@@ -236,9 +235,6 @@ capabilities:
         # in `files` fails to expand there, while a hook receives it through
         # `env` (in clone mode it mirrors the host's absolute path). Without a
         # workspace the trust entry is left out.
-        # Kept aligned with .devcontainer/codex-config.toml except for the
-        # approval policy — see the closing paragraph of the runbook's
-        # "Overriding the built-in YOLO launch commands".
         - description: Codex CLI config seed (skipped when one exists; agent user)
           user: "1000"
           env: [WORKSPACE_DIR]
@@ -298,9 +294,6 @@ capabilities:
           The GH_TOKEN environment variable holds a sentinel, not the real
           value, and the real token does not exist in this environment. There
           is never any reason to read, search for, or print it.
-        - pass-cli / pass-relogin do NOT exist here (they are Dev Container-only).
-          AGENTS.md describes them because it also covers the Dev Container;
-          ignore those instructions in this environment.
         - Outbound traffic is a deny-by-default domain allowlist. A denied
           request gets a 403 whose body reads `Approval required for <host>:<port>.`
           If you need a destination outside the allowlist, ask the user instead

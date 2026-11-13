@@ -1,6 +1,6 @@
 # Python + uv + AI Agent Development Template
 
-This repository serves as a template for developing Python applications using the [uv](https://docs.astral.sh/uv/) package manager. It comes pre-configured with Docker, Dev Containers, GitHub Actions CI, and common development tools.
+This repository serves as a template for developing Python applications using the [uv](https://docs.astral.sh/uv/) package manager. It comes pre-configured with Docker, Docker Sandboxes kits for AI agents, GitHub Actions CI, and common development tools.
 
 ## Scope
 
@@ -12,16 +12,15 @@ This template targets **non-distributed Python applications** (services, interna
 
 *   **Modern Python Stack:** Uses Python 3.14+ and `uv` for fast dependency management.
 *   **Containerized Development:**
-    *   **Docker & Docker Compose:** Provides consistent development and production environments using multi-stage builds (`dev`, `prod`, `devcontainer`).
-    *   **VSCode Dev Containers:** Includes a `.devcontainer/devcontainer.json` configuration that layers the AI agent toolchain (Claude Code CLI, Codex CLI, GitHub CLI, common utilities) on top of the project's Python environment via [Dev Container Features](https://containers.dev/implementors/features/) and post-create setup.
-*   **AI Agent Sandbox:** [Docker Sandboxes](https://docs.docker.com/ai/sandboxes/) (`sbx`) kits in `.sandbox/` run agents under stronger isolation — a microVM kernel boundary, deny-by-default networking, and credentials that never enter the VM. Coexists with the Dev Container; launched from the host.
+    *   **Docker & Docker Compose:** Provides consistent development and production environments using multi-stage builds (`dev`, `prod`).
+*   **AI Agent Sandbox:** [Docker Sandboxes](https://docs.docker.com/ai/sandboxes/) (`sbx`) kits in `.sandbox/` run agents under stronger isolation — a microVM kernel boundary, deny-by-default networking, and credentials that never enter the VM. Launched from the host.
 *   **Development Tools:** Integrated with standard development tools:
     *   [`ruff`](https://docs.astral.sh/ruff/) for linting and formatting.
     *   [`pyright`](https://microsoft.github.io/pyright/) for static type checking.
     *   [`pytest`](https://docs.pytest.org/) for testing (including coverage reports).
     *   [`taskipy`](https://github.com/taskipy/taskipy) for managing project tasks.
 *   **CI/CD:** GitHub Actions workflows (`.github/workflows/`) — a consolidated `ci.yml` runs linting, type checking, and tests (with a coverage PR comment) in a single job; companion workflows cover security scanning, SBOM generation, Dockerfile/workflow linting, and labeling.
-*   **Pre-commit Hooks:** `.pre-commit-config.yaml` runs ruff, pyright, and a lockfile check at commit time via [prek](https://github.com/j178/prek) — set up automatically in the Dev Container, optional elsewhere.
+*   **Pre-commit Hooks:** `.pre-commit-config.yaml` runs ruff, pyright, and a lockfile check at commit time via [prek](https://github.com/j178/prek) (optional).
 *   **Shared Knowledge Base:** `docs/knowledge/` is an [OKF](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md) bundle — a plain-Markdown knowledge base (ADRs, architecture notes, conventions, runbooks, research) that both humans and AI agents read and write. Ships as a labeled-sample skeleton; start at [`docs/knowledge/index.md`](docs/knowledge/index.md).
 
 ## Security
@@ -52,14 +51,6 @@ cf. https://zenn.dev/dajiaji/articles/47164ff27d2123
 ```
 .
 ├── .claude/                    # Claude Code settings (permissions.defaultMode: auto)
-├── .devcontainer/              # Dev Container config (also runs the AI agent toolchain via Features)
-│   ├── codex-config.toml       # Initial Codex CLI config copied into the persisted ~/.codex volume
-│   ├── compose.yaml            # Devcontainer compose definition (merged with git-ignored compose.local.yaml)
-│   ├── devcontainer.json
-│   ├── initialize.sh           # Host-side hook: stages host git/Claude config for the container
-│   ├── post-create.sh
-│   ├── post-start.sh
-│   └── README.md               # AI agent toolchain, auth, isolation modes, PAT setup
 ├── .dockerignore
 ├── .editorconfig
 ├── .github/                    # GitHub-specific files
@@ -93,7 +84,7 @@ cf. https://zenn.dev/dajiaji/articles/47164ff27d2123
 │   └── settings.json
 ├── AGENTS.md                   # Project guidelines for AI agents and humans
 ├── CLAUDE.md                   # Pointer to AGENTS.md for Claude Code
-├── Dockerfile                  # Defines container images (dev, prod, devcontainer)
+├── Dockerfile                  # Defines container images (dev, prod)
 ├── LICENSE
 ├── README.md                   # This file
 ├── compose.dev.yml             # Docker Compose configuration for development
@@ -127,18 +118,12 @@ After creating a repository from this template:
 ### Prerequisites
 
 *   Docker and Docker Compose
-*   VSCode with the "Dev Containers" extension
+*   [Docker Sandboxes](https://docs.docker.com/ai/sandboxes/) (`sbx`) — only for running AI agents (see [below](#ai-agent-sandbox-docker-sandboxes))
 *   uv (if not using Docker)
 
 ### Setup Options
 
-#### Option 1: Using VSCode Dev Containers
-
-1.  Open this repository in VSCode.
-2.  When prompted ("Reopen in Container"), click it. VSCode will build the development container and connect to it automatically.
-3.  You can now use the integrated terminal in VSCode, which runs inside the container.
-
-#### Option 2: Using Docker Compose Manually
+#### Option 1: Using Docker Compose
 
 1.  **Build the development image:**
     ```bash
@@ -157,7 +142,7 @@ After creating a repository from this template:
     docker compose -f compose.dev.yml run --rm app bash
     ```
 
-#### Option 3: Using uv locally (without Docker)
+#### Option 2: Using uv locally (without Docker)
 1.  **Install `uv`** (if not already installed):
     ```bash
     # cf. https://github.com/astral-sh/uv?tab=readme-ov-file#installation
@@ -176,9 +161,9 @@ After creating a repository from this template:
     uv run task test
     ```
 
-### Pre-commit Hooks (optional outside the Dev Container)
+### Pre-commit Hooks (optional)
 
-The Dev Container registers the git pre-commit hooks automatically (see `.devcontainer/post-create.sh`). If you work outside the container, [install prek](https://github.com/j178/prek?tab=readme-ov-file#installation) and run:
+[Install prek](https://github.com/j178/prek?tab=readme-ov-file#installation) (preinstalled in the sbx kit) and run:
 
 ```bash
 prek install
@@ -188,7 +173,7 @@ The hooks (defined in `.pre-commit-config.yaml`) run `ruff check`, `ruff format 
 
 ### Available Tasks (using Taskipy)
 
-Run these tasks inside the development container (either via Dev Containers terminal or `docker compose run`):
+Run these tasks via `uv run task <name>` locally, or inside the development container (`docker compose run`):
 
 *   `task lint`: Run linters (`ruff check` and `pyright`).
 *   `task fix`: Automatically fix linting issues with `ruff`.
@@ -198,28 +183,22 @@ Run these tasks inside the development container (either via Dev Containers term
 
 Example:
 ```bash
-# Inside Dev Container terminal or after `docker compose run ... bash`
-task lint
-task test_cov
+uv run task lint
+uv run task test_cov
 ```
-
-## AI Agent Dev Container
-
-The Dev Container also serves as the runtime for AI coding agents (Claude Code, Codex, etc.) — setup and authentication are in [`.devcontainer/README.md`](.devcontainer/README.md); the mechanics behind it (host config inheritance, isolation modes and their limits, scoped GitHub PAT, task secrets) live in [`docs/knowledge/`](docs/knowledge/index.md).
 
 ## AI Agent Sandbox (Docker Sandboxes)
 
-For unattended agent runs that need stronger isolation than a Linux container —
+AI coding agents (Claude Code, Codex) run in an isolated environment —
 a microVM kernel boundary, deny-by-default networking, and secrets that never enter the VM —
 `.sandbox/` ships kits for [Docker Sandboxes](https://docs.docker.com/ai/sandboxes/) (`sbx`).
-It coexists with the Dev Container and is launched from the host, e.g.:
+Launch it from the host, e.g.:
 
 ```bash
 sbx env run ./.sandbox/claude-auto     # Claude Code in auto permission mode
 sbx env run ./.sandbox/codex-approve   # Codex in approve-for-me mode
 ```
 
-`sbx` runs on the host OS and cannot be used from inside the Dev Container.
-See [`.sandbox/README.md`](.sandbox/README.md) for setup and for getting the work
+`sbx` runs on the host OS. See [`.sandbox/README.md`](.sandbox/README.md) for setup and for getting the work
 back to the host; [`docs/knowledge/runbooks/agent-sandbox-sbx.md`](docs/knowledge/runbooks/agent-sandbox-sbx.md)
 covers the mechanics (environment files and kit spec v3, why clone mode is mandatory, network policy, secrets, troubleshooting).

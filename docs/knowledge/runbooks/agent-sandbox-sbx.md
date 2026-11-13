@@ -8,18 +8,18 @@ timestamp: 2026-11-09T00:00:00Z
 
 # Agent sandbox (sbx) — operation and mechanics
 
-Setup steps are in [`.sandbox/README.md`](/.sandbox/README.md). This document is the reference behind them. Verification status: [sbx-verification.md](/docs/knowledge/research/sbx-verification.md). Why it coexists with the Dev Container: [ADR-0002](/docs/knowledge/adr/0002-coexist-sbx-with-devcontainer.md).
+Setup steps are in [`.sandbox/README.md`](/.sandbox/README.md). This document is the reference behind them. Verification status: [sbx-verification.md](/docs/knowledge/research/sbx-verification.md). Why it is the only agent runtime: [ADR-0003](/docs/knowledge/adr/0003-retire-devcontainer.md).
 
-## What sbx adds over the Dev Container
+## What sbx provides
 
-The Dev Container ([devcontainer-agent-runtime.md](/docs/knowledge/architecture/devcontainer-agent-runtime.md)) is a Linux container: no separate kernel, no granular network allow/deny, no nested Docker. sbx closes those gaps:
+Compared with running agents in a plain Linux container (no separate kernel, no granular network allow/deny, no nested Docker), sbx adds:
 
 - **microVM boundary** — a separate kernel, so container-escape kernel bugs are contained.
 - **Deny-by-default networking** — outbound TCP only to allowlisted domains (UDP/ICMP blocked).
 - **Credentials stay out of the VM** — the host-side proxy injects API keys/tokens into HTTP headers; real values never enter the VM.
 - **A Docker daemon per sandbox** — the agent can build/run containers without touching the host's Docker.
 
-Use the Dev Container for interactive human development in VS Code, and sbx for unattended agent runs or anything needing strong isolation.
+Human development runs on the host (`uv sync`) or in `compose.dev.yml`; AI agents run in sbx.
 
 What the kit ([kit/spec.yaml](/.sandbox/kit/spec.yaml)) installs at creation: the official `uv` build (when the image's own `uv` can't run — see [Kit spec v3](#kit-spec-v3)), Python 3.14 via `uv python install` (matching `.python-version`), `prek`, Node (only if the image lacks npm) plus the Codex CLI and its Claude Code plugin registration, an initial Codex config seed, and the network-allowlist/credential wiring. `uv sync` and `prek install` are left to the agent (via the kit's agent context) since an install hook's cwd isn't necessarily the workspace.
 
@@ -61,7 +61,7 @@ cmd: [--permission-mode, auto]
 
 Verify inside the VM with `ps -eo args | grep -E '^(claude|codex)'`: the replacement command must appear with **no bypass flag left**.
 
-`.claude/settings.json` (`permissions.defaultMode: "auto"`) and the kit's Codex seed (`approval_policy = "on-request"`, `approvals_reviewer = "auto_review"`) encode the same policy, but launch flags are stronger. The built-in claude kit also writes `"defaultMode": "bypassPermissions"` into the VM's `~/.claude/settings.json`, so don't rely on config files — always state the mode as a launch flag. In a **codex** sandbox the built-in kit seeds its own `~/.codex/config.toml` (`approval_policy = "never"`, `sandbox_mode = "danger-full-access"`), so the kit's seed is skipped and `--approve-for-me` (which forces workspace-write + auto-review) is the only guard; a bare `codex` started some other way inside that sandbox runs YOLO. The kit's seed deliberately differs from `.devcontainer/codex-config.toml` (`approval_policy = "never"`); aligning the two is an open question.
+`.claude/settings.json` (`permissions.defaultMode: "auto"`) and the kit's Codex seed (`approval_policy = "on-request"`, `approvals_reviewer = "auto_review"`) encode the same policy, but launch flags are stronger. The built-in claude kit also writes `"defaultMode": "bypassPermissions"` into the VM's `~/.claude/settings.json`, so don't rely on config files — always state the mode as a launch flag. In a **codex** sandbox the built-in kit seeds its own `~/.codex/config.toml` (`approval_policy = "never"`, `sandbox_mode = "danger-full-access"`), so the kit's seed is skipped and `--approve-for-me` (which forces workspace-write + auto-review) is the only guard; a bare `codex` started some other way inside that sandbox runs YOLO.
 
 > Before v0.51.0 this template used `sbx create` + `sbx exec` (approach A) or fork kits that `extends` the built-in agent (approach B). Fork kits no longer load (`"claude" is no longer a built-in agent`); `sbx create --clone --kit ./.sandbox/kit claude .` + `sbx exec` should still work with the v3 kit (unverified), but the environment file replaces it — it also pins `--clone` and the kit so they can't be forgotten.
 
@@ -129,30 +129,39 @@ By goal:
 
 ## What sbx inherits automatically
 
-Less of what the Dev Container's `initialize.sh` handles comes for free than before v3 (measured on the v0.51.0 claude kit):
+Less of the host's configuration comes for free than before v3 (measured on the v0.51.0 claude kit):
 
 - **git identity is not inherited.** `user.name`/`user.email` are unset in the VM (v2 copied the host's), so set them once inside the sandbox (`git config --global user.name …`) before the agent commits. A global gitignore is still wired up (`core.excludesFile`).
 - **`~/.claude/skills`** — a **read-only** virtiofs mount of the host's skills (v2 mounted it read-write). `sandboxOptions.skills` in an environment file can set `readwrite` or `off`.
-- The host's `~/.claude/settings.json` is **not** inherited. Don't write or merge into the VM's `~/.claude/settings.json` either: the built-in kit writes it at creation (including `"defaultMode": "bypassPermissions"`) and may replace kit content there. Instead, the opt-in [`host-claude` overlay](/.sandbox/host-claude/sbxenv.yaml) runs [`.sandbox/stage-host-claude.sh`](/.sandbox/stage-host-claude.sh) on the host after creation (a `lifecycle.postCreate` command), which `sbx cp`s the host settings (host-home paths rewritten) to `~/.claude/host-settings.json` plus `statusline-command.sh`, and the overlay's `cmd` adds `--settings /home/agent/.claude/host-settings.json`. Note that `--settings` outranks the project's `.claude/settings.json`, unlike the Dev Container's merge into user settings; the `--permission-mode` flag still wins over either. The copies are owned by the host's uid (world-readable), which is enough for Claude Code to read them.
+- The host's `~/.claude/settings.json` is **not** inherited. Don't write or merge into the VM's `~/.claude/settings.json` either: the built-in kit writes it at creation (including `"defaultMode": "bypassPermissions"`) and may replace kit content there. Instead, the opt-in [`host-claude` overlay](/.sandbox/host-claude/sbxenv.yaml) runs [`.sandbox/stage-host-claude.sh`](/.sandbox/stage-host-claude.sh) on the host after creation (a `lifecycle.postCreate` command), which `sbx cp`s the host settings (host-home paths rewritten) to `~/.claude/host-settings.json` plus `statusline-command.sh`, and the overlay's `cmd` adds `--settings /home/agent/.claude/host-settings.json`. Note that `--settings` outranks the project's `.claude/settings.json` (it is not a merge into user settings); the `--permission-mode` flag still wins over either. The copies are owned by the host's uid (world-readable), which is enough for Claude Code to read them.
 
 ## Task secrets and the network policy
 
-pass-cli is deliberately not carried over. Use `sbx secret set <service> --sandbox <name>` plus a `credential@1` entry in the kit; the proxy injects the header only for the domains listed. Kit changes need a recreate; a secret registered after creation applies immediately, even while running (measured on v0.51.0). A sandbox-scoped secret does **not** survive `sbx env rm` — it goes with the sandbox, so re-register it after every recreate, the ones you do to pick up a kit change included. **Never use the global `-g` form** — it would spill into sandboxes for other repositories.
+Use `sbx secret set <service> --sandbox <name>` plus a `credential@1` entry in the kit; the proxy injects the header only for the domains listed. Kit changes need a recreate; a secret registered after creation applies immediately, even while running (measured on v0.51.0). A sandbox-scoped secret does **not** survive `sbx env rm` — it goes with the sandbox, so re-register it after every recreate, the ones you do to pick up a kit change included. **Never use the global `-g` form** — it would spill into sandboxes for other repositories.
 
-| | pass-cli (Dev Container) | sbx credential injection |
-|---|---|---|
-| Where the value lives | Inside the container (PAT file + session) | Host only — never enters the VM |
-| Injection granularity | Per-command env vars | Domain-restricted HTTP headers |
-| If compromised | Container compromise = PAT compromise | VM compromise doesn't leak the value |
-| Scope | Per-project vault | Per sandbox |
+The value lives on the host only, is injected as a domain-restricted HTTP header, and is scoped to one sandbox — so a VM compromise doesn't leak it.
 
 Avoid `-t <token>` (it lands in shell history): omit it to be prompted, or use `--ref op://<vault>/<item>/<field>` / `--command '<prints the token>'`. If a tool genuinely needs the real secret as an env var, decide case by case — the value then enters the VM.
 
 Audit the allowlist with `sbx policy ls`; the kit's `runtime.allow` only *adds* to the default policy, which carries broad wildcards. When probing from inside the VM, judge by the **response body**, not the status code — a denial is a 403 whose body reads `Approval required for <host>:<port>.`, while allowed domains return 4xx/404 routinely (`api.anthropic.com` answers 404 to `GET /`).
 
+## Restricting GitHub permissions (PAT)
+
+The agent can do whatever the registered token allows, so register a dedicated, narrowly-scoped fine-grained PAT rather than your everyday token, and only for the sandbox that needs it (`sbx secret set github --sandbox <name>`).
+
+* **Quick link** — a [prefilled fine-grained template](https://github.com/settings/personal-access-tokens/new?name=agent-sandbox&description=Agent%20sandbox%20baseline&expires_in=90&contents=write&pull_requests=write&issues=write&metadata=read&actions=read&workflows=write) (`Contents: Write`, `Pull requests: Write`, `Issues: Write`, `Metadata: Read`, `Actions: Read`, `Workflows: Write`; 90-day expiry). Tweak the query params for a narrower/wider grant (e.g. drop `pull_requests=write` for read-only review, bump `actions=read` to `write` for dispatch, drop `workflows=write` if the agent shouldn't touch `.github/workflows/*.yml`).
+* Suggested minimum permissions, by need:
+  * Read issues / PRs / repo metadata — `Issues: Read`, `Pull requests: Read`, `Metadata: Read`
+  * Comment on / open / close PRs — add `Pull requests: Write`, `Issues: Write`
+  * HTTPS `git push` / commit — add `Contents: Write` (repo-scoped)
+  * GitHub Actions read/dispatch — add `Actions: Read` (or `Write` if dispatch needed)
+  * Edit workflow YAML in `.github/workflows/` — add `Workflows: Write`
+* Fine-grained PATs don't yet cover every `gh` subcommand — on a 403 or "PAT not supported" error, fall back to a tightly-scoped classic PAT.
+* Rotate by running `sbx secret set` again; it applies immediately, no recreate needed.
+
 ## Orchestration (delegating to Codex)
 
-A sandbox comes from one agent kit, but the shared kit co-installs the delegation target, so a claude sandbox doubles as an orchestration environment with Claude Code as the parent — the same arrangement as the Dev Container's `post-create.sh`. The Codex seed (auto-review) means a delegated run doesn't stall waiting for approval. Delegate auth is either an interactive login inside the sandbox or proxy injection (`sbx secret set openai --sandbox <name>`). Sandboxes can't collaborate with each other (isolated filesystem/network, separate clones), so hand-off goes through GitHub — keep tightly-coupled orchestration inside one sandbox.
+A sandbox comes from one agent kit, but the shared kit co-installs the delegation target, so a claude sandbox doubles as an orchestration environment with Claude Code as the parent. The Codex seed (auto-review) means a delegated run doesn't stall waiting for approval. Delegate auth is either an interactive login inside the sandbox or proxy injection (`sbx secret set openai --sandbox <name>`). Sandboxes can't collaborate with each other (isolated filesystem/network, separate clones), so hand-off goes through GitHub — keep tightly-coupled orchestration inside one sandbox.
 
 ## Troubleshooting authentication
 
@@ -197,6 +206,6 @@ Most of this was run on v0.51.0 ([sbx-verification.md](/docs/knowledge/research/
 6. `gh api user` succeeds while `echo "$GH_TOKEN"` shows a sentinel; `git ls-remote` and `git push --dry-run` work (over HTTPS — see above).
 7. Audit `sbx policy ls`; a `curl` outside the allowlist returns `Approval required for …`.
 8. Repeat step 2 for Codex (`sbx env run ./.sandbox/codex-approve` → `codex --approve-for-me`), and check whether ChatGPT subscription auth survives.
-9. Set the git identity (`git config --global user.name/user.email`); `command -v pass-cli` is empty — confirms the environment detection in the agent context and `AGENTS.md`.
+9. Set the git identity (`git config --global user.name/user.email`).
 10. Leave and run `sbx env run` again → re-attaches without re-running install; `sbx env rm` and run → install runs.
 11. Commit in the VM and `git push`; also pull it back with `git fetch sandbox-<name>`.

@@ -8,7 +8,7 @@ Kits for running agents inside a microVM with [Docker Sandboxes](https://docs.do
 
 ## Usage
 
-**Run on the host** (not available from inside the devcontainer). Sandboxes are named `claude-<dir>` / `codex-<dir>` after the checkout directory (`sbx ls`).
+**Run on the host** (not available from inside a sandbox). Sandboxes are named `claude-<dir>` / `codex-<dir>` after the checkout directory (`sbx ls`).
 
 ```bash
 # Preview what gets created (sandbox, kit, git remote, launch command)

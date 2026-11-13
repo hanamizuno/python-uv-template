@@ -3,7 +3,7 @@
 # containers, tooling config) rather than application code.
 #
 # Note: the labeler's `dot` option defaults to true, so globs match
-# dot-directories like .github/ and .devcontainer/ without special handling.
+# dot-directories like .github/ and .sandbox/ without special handling.
 # Deliberately excluded: .python-version, uv.lock (routine dependency churn).
 
 meta:
@@ -19,7 +19,6 @@ meta:
           - ".dockerignore"
           - "compose.yml"
           - "compose.dev.yml"
-          - ".devcontainer/**"
           # AI agent sandbox kits (Docker Sandboxes / sbx)
           - ".sandbox/**"
           # Tooling / editor config (ruff, pyright, pytest, taskipy live in pyproject.toml)
