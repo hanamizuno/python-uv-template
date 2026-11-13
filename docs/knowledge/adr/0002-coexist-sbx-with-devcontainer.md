@@ -2,7 +2,7 @@
 type: ADR
 title: Run sbx alongside the Dev Container, staged migration
 description: Why sbx was added without removing the Dev Container's agent tooling, and when to revisit that
-tags: [sbx, devcontainer, agents, accepted]
+tags: [sbx, devcontainer, agents, superseded, Superseded by ADR-0003]
 timestamp: 2026-09-05T00:00:00Z
 ---
 
@@ -10,11 +10,11 @@ timestamp: 2026-09-05T00:00:00Z
 
 ## Status
 
-Accepted — 2026-09-05
+Superseded by [ADR-0003](/docs/knowledge/adr/0003-retire-devcontainer.md) — 2026-11-13 (accepted 2026-09-05)
 
 ## Context
 
-The Dev Container ([devcontainer-agent-runtime.md](/docs/knowledge/architecture/devcontainer-agent-runtime.md)) is a Linux container: no separate kernel, no granular network allow/deny, no nested Docker for the agent. [sbx](/docs/knowledge/runbooks/agent-sandbox-sbx.md) (Docker Sandboxes) closes those gaps with a microVM boundary, deny-by-default networking, and credential injection that keeps real secrets out of the VM entirely. Nothing in this Python/uv kit has been run on real hardware yet — see [sbx-verification.md](/docs/knowledge/research/sbx-verification.md) — only a sibling pnpm template's equivalent setup has been hardware-verified.
+The Dev Container (`architecture/devcontainer-agent-runtime.md`, retired 2026-11-13) is a Linux container: no separate kernel, no granular network allow/deny, no nested Docker for the agent. [sbx](/docs/knowledge/runbooks/agent-sandbox-sbx.md) (Docker Sandboxes) closes those gaps with a microVM boundary, deny-by-default networking, and credential injection that keeps real secrets out of the VM entirely. Nothing in this Python/uv kit has been run on real hardware yet — see [sbx-verification.md](/docs/knowledge/research/sbx-verification.md) — only a sibling pnpm template's equivalent setup has been hardware-verified.
 
 ## Decision
 

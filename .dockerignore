@@ -16,8 +16,7 @@ htmlcov/
 .coverage
 .coverage.*
 
-# Local editor/agent state, host config staged for the devcontainer, sbx kits
+# Local editor/agent state, sbx kits
 .claude/
-.devcontainer/
 .sandbox/
 .vscode/
